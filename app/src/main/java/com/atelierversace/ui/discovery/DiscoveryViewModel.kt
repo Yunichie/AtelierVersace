@@ -9,7 +9,6 @@ import com.atelierversace.utils.GeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -31,18 +30,19 @@ class DiscoveryViewModel(
     private val _discoveryState = MutableStateFlow<DiscoveryState>(DiscoveryState.Idle)
     val discoveryState: StateFlow<DiscoveryState> = _discoveryState
 
-    // Track wishlist updates with a trigger
-    private val _wishlistUpdateTrigger = MutableStateFlow(0)
+    private val _wishlistItems = MutableStateFlow<Set<String>>(emptySet())
+    val wishlistItems: StateFlow<Set<String>> = _wishlistItems
 
-    val wishlistItems: StateFlow<Set<String>> = combine(
-        wishlist,
-        _wishlistUpdateTrigger
-    ) { perfumes, _ ->
-        perfumes.map { "${it.brand}|${it.name}" }.toSet()
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    init {
+        viewModelScope.launch {
+            wishlist.collect { perfumes ->
+                _wishlistItems.value = perfumes.map { "${it.brand}|${it.name}" }.toSet()
+            }
+        }
+    }
 
     fun isInWishlist(brand: String, name: String): Boolean {
-        return wishlistItems.value.contains("$brand|$name")
+        return _wishlistItems.value.contains("$brand|$name")
     }
 
     fun searchPerfumes(query: String) {
@@ -73,6 +73,15 @@ class DiscoveryViewModel(
     }
 
     fun toggleWishlist(profile: PersonaProfile) {
+        val key = "${profile.brand}|${profile.name}"
+
+        val currentSet = _wishlistItems.value
+        if (currentSet.contains(key)) {
+            _wishlistItems.value = currentSet - key
+        } else {
+            _wishlistItems.value = currentSet + key
+        }
+
         viewModelScope.launch {
             val existing = wishlist.value.find {
                 it.brand == profile.brand && it.name == profile.name
@@ -95,17 +104,15 @@ class DiscoveryViewModel(
                 )
                 repository.addPerfume(perfume)
             }
-
-            // Trigger immediate UI update
-            _wishlistUpdateTrigger.value++
         }
     }
 
     fun removeFromWishlist(perfume: Perfume) {
+        val key = "${perfume.brand}|${perfume.name}"
+        _wishlistItems.value = _wishlistItems.value - key
+
         viewModelScope.launch {
             repository.deletePerfume(perfume)
-            // Trigger immediate UI update
-            _wishlistUpdateTrigger.value++
         }
     }
 

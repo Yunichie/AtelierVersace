@@ -55,21 +55,25 @@ class ScentLensViewModel(
 
     fun addToWardrobe(brand: String, name: String, profile: PersonaProfile, imageUri: String, onComplete: () -> Unit) {
         viewModelScope.launch {
-            val perfume = Perfume(
-                brand = brand,
-                name = name,
-                imageUri = imageUri,
-                analogy = profile.analogy,
-                coreFeeling = profile.coreFeeling,
-                localContext = profile.localContext,
-                topNotes = profile.topNotes.joinToString(", "),
-                middleNotes = profile.middleNotes.joinToString(", "),
-                baseNotes = profile.baseNotes.joinToString(", "),
-                isWishlist = false
-            )
-            repository.addPerfume(perfume)
-            _state.value = ScentLensState.Idle
-            onComplete()
+            try {
+                val perfume = Perfume(
+                    brand = brand,
+                    name = name,
+                    imageUri = imageUri,
+                    analogy = profile.analogy,
+                    coreFeeling = profile.coreFeeling,
+                    localContext = profile.localContext,
+                    topNotes = profile.topNotes.joinToString(", "),
+                    middleNotes = profile.middleNotes.joinToString(", "),
+                    baseNotes = profile.baseNotes.joinToString(", "),
+                    isWishlist = false
+                )
+                repository.addPerfume(perfume)
+                _state.value = ScentLensState.Idle
+                onComplete()
+            } catch (e: Exception) {
+                _state.value = ScentLensState.Error(e.message ?: "Failed to add perfume")
+            }
         }
     }
 

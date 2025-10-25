@@ -138,7 +138,13 @@ fun AtelierVersaceApp(
                 ScentLensScreen(
                     viewModel = scentLensViewModel,
                     onNavigateToWardrobe = {
-                        navController.navigate(Screen.Wardrobe.route)
+                        navController.navigate(Screen.Wardrobe.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = false
+                        }
                     }
                 )
             }

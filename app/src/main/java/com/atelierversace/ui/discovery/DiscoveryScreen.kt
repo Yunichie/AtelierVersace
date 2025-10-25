@@ -1,5 +1,3 @@
-// ==================== Discovery Screen with Wishlist Toggle & Detail View ====================
-// File: app/src/main/java/com/atelierversace/ui/discovery/DiscoveryScreen.kt
 package com.atelierversace.ui.discovery
 
 import androidx.compose.animation.*
@@ -40,10 +38,9 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
     var selectedProfile by remember { mutableStateOf<PersonaProfile?>(null) }
 
     if (selectedProfile != null) {
-        // Detail View
         DiscoveryDetailScreen(
             profile = selectedProfile!!,
-            isInWishlist = viewModel.isInWishlist(selectedProfile!!.brand, selectedProfile!!.name),
+            isInWishlist = wishlistItems.contains("${selectedProfile!!.brand}|${selectedProfile!!.name}"),
             onBack = { selectedProfile = null },
             onToggleWishlist = {
                 viewModel.toggleWishlist(selectedProfile!!)
@@ -73,7 +70,6 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                 label = "search_transition"
             ) { expanded ->
                 if (!expanded) {
-                    // Initial State
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -222,7 +218,7 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
 
                                 is DiscoveryState.Success -> {
                                     items(state.recommendations) { profile ->
-                                        val isInWishlist = viewModel.isInWishlist(profile.brand, profile.name)
+                                        val isInWishlist = wishlistItems.contains("${profile.brand}|${profile.name}")
 
                                         GlassCard(
                                             onClick = { selectedProfile = profile },
