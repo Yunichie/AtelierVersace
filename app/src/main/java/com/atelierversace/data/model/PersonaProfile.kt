@@ -5,5 +5,8 @@ data class PersonaProfile(
     val name: String,
     val analogy: String,
     val coreFeeling: String,
-    val localContext: String
+    val localContext: String,
+    val topNotes: List<String> = emptyList(),
+    val middleNotes: List<String> = emptyList(),
+    val baseNotes: List<String> = emptyList()
 )

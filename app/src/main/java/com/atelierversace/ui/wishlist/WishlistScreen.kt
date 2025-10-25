@@ -6,26 +6,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.atelierversace.data.model.Perfume
 import com.atelierversace.ui.components.GlassCard
 import com.atelierversace.ui.discovery.DiscoveryViewModel
+import com.atelierversace.ui.theme.*
 
 @Composable
 fun WishlistScreen(viewModel: DiscoveryViewModel) {
@@ -35,17 +33,9 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF8F7FF),
-                        Color(0xFFF5F5F5)
-                    )
-                )
-            )
+            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF))))
     ) {
         if (selectedPerfume != null) {
-            // Detail View
             WishlistDetailScreen(
                 perfume = selectedPerfume!!,
                 onBack = { selectedPerfume = null },
@@ -55,28 +45,74 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                 }
             )
         } else {
-            // Grid View
             Column(modifier = Modifier.fillMaxSize()) {
-                // Header
+                // Improved Header
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.Transparent
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Cream.copy(alpha = 0.9f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                            .padding(horizontal = 24.dp, vertical = 20.dp)
                     ) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Column {
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
-                            text = "Wishlist",
-                            style = MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Normal,
-                                fontSize = 36.sp
-                            ),
-                            color = Color(0xFF2D2D2D)
-                        )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Wishlist",
+                                    style = MaterialTheme.typography.displaySmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 40.sp
+                                    ),
+                                    color = TextPrimary
+                                )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                                if (wishlist.isNotEmpty()) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = LightPeriwinkle.copy(alpha = 0.2f),
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.fillMaxSize()
+                                        ) {
+                                            Text(
+                                                text = "${wishlist.size}",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = LightPeriwinkle,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = if (wishlist.isEmpty())
+                                    "Fragrances you want to try"
+                                else
+                                    "Your dream fragrances",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+                        }
                     }
                 }
 
@@ -100,14 +136,14 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                             Text(
                                 text = "Your wishlist is empty",
                                 style = MaterialTheme.typography.titleLarge,
-                                color = Color(0xFF2D2D2D),
+                                color = TextPrimary,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Add fragrances you love from the Discovery tab",
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color(0xFF8E8E93),
+                                color = TextSecondary,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -125,9 +161,7 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                 modifier = Modifier.aspectRatio(0.75f)
                             ) {
                                 Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(12.dp),
+                                    modifier = Modifier.fillMaxSize().padding(12.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Box(
@@ -139,7 +173,6 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                                 RoundedCornerShape(12.dp)
                                             )
                                     ) {
-                                        // Placeholder for image
                                         Box(
                                             modifier = Modifier.fillMaxSize(),
                                             contentAlignment = Alignment.Center
@@ -162,7 +195,7 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                         Icon(
                                             imageVector = Icons.Default.Favorite,
                                             contentDescription = "Remove",
-                                            tint = Color(0xFFFF6B9D),
+                                            tint = LightPeriwinkle,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
@@ -172,7 +205,7 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                     Text(
                                         text = perfume.brand,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Color(0xFF8E8E93)
+                                        color = TextSecondary
                                     )
 
                                     Text(
@@ -182,7 +215,7 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                         ),
                                         maxLines = 2,
                                         textAlign = TextAlign.Center,
-                                        color = Color(0xFF2D2D2D)
+                                        color = TextPrimary
                                     )
 
                                     Text(
@@ -190,7 +223,7 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                         style = MaterialTheme.typography.bodySmall,
                                         maxLines = 2,
                                         textAlign = TextAlign.Center,
-                                        color = Color(0xFF8E8E93),
+                                        color = TextSecondary,
                                         modifier = Modifier.padding(top = 4.dp)
                                     )
                                 }
@@ -214,14 +247,7 @@ private fun WishlistDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF8F7FF),
-                        Color(0xFFF5F5F5)
-                    )
-                )
-            )
+            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF))))
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -230,7 +256,6 @@ private fun WishlistDetailScreen(
             item {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Header with Back and Remove buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -238,9 +263,9 @@ private fun WishlistDetailScreen(
                 ) {
                     IconButton(onClick = onBack) {
                         Icon(
-                            painter = painterResource(android.R.drawable.ic_menu_revert),
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF2D2D2D)
+                            tint = TextPrimary
                         )
                     }
 
@@ -248,23 +273,16 @@ private fun WishlistDetailScreen(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Remove",
-                            tint = Color(0xFFFF6B9D)
+                            tint = Taupe
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Perfume Image Placeholder
-                GlassCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp)
-                ) {
+                GlassCard(modifier = Modifier.fillMaxWidth().height(250.dp)) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
+                        modifier = Modifier.fillMaxSize().padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -278,11 +296,10 @@ private fun WishlistDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Brand and Name
                 Text(
                     text = perfume.brand,
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFF8E8E93)
+                    color = TextSecondary
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -292,53 +309,45 @@ private fun WishlistDetailScreen(
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
-                    color = Color(0xFF2D2D2D)
+                    color = TextPrimary
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Analogy Card
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.Top
                     ) {
                         Icon(
-                            painter = painterResource(android.R.drawable.ic_dialog_info),
+                            imageVector = Icons.Default.Info,
                             contentDescription = null,
-                            tint = Color(0xFF6B4EFF),
+                            tint = SkyBlue,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = perfume.analogy,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF2D2D2D)
+                            color = TextPrimary
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Core Feeling Card
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Core Feeling",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF8E8E93)
+                            color = TextSecondary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = perfume.coreFeeling,
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color(0xFFFF6B9D),
+                            color = LightPeriwinkle,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -346,23 +355,18 @@ private fun WishlistDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Local Context Card
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
+                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Best For",
                             style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFF8E8E93)
+                            color = TextSecondary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = perfume.localContext,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF2D2D2D)
+                            color = TextPrimary
                         )
                     }
                 }
@@ -372,7 +376,6 @@ private fun WishlistDetailScreen(
         }
     }
 
-    // Delete Confirmation Dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -380,29 +383,24 @@ private fun WishlistDetailScreen(
                 Text(
                     "Remove from Wishlist?",
                     style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFF2D2D2D)
+                    color = TextPrimary
                 )
             },
             text = {
                 Text(
                     "Are you sure you want to remove ${perfume.name} from your wishlist?",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8E8E93)
+                    color = TextSecondary
                 )
             },
             confirmButton = {
-                GlassCard(
-                    onClick = {
-                        showDeleteDialog = false
-                        onRemove()
-                    }
-                ) {
+                GlassCard(onClick = {
+                    showDeleteDialog = false
+                    onRemove()
+                }) {
                     Box(
                         modifier = Modifier
-                            .background(
-                                Color(0xFFFF6B9D),
-                                shape = RoundedCornerShape(20.dp)
-                            )
+                            .background(Taupe, shape = RoundedCornerShape(20.dp))
                             .padding(horizontal = 24.dp, vertical = 12.dp)
                     ) {
                         Text(
@@ -414,16 +412,11 @@ private fun WishlistDetailScreen(
                 }
             },
             dismissButton = {
-                GlassCard(
-                    onClick = { showDeleteDialog = false }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 24.dp, vertical = 12.dp)
-                    ) {
+                GlassCard(onClick = { showDeleteDialog = false }) {
+                    Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
                         Text(
                             "Cancel",
-                            color = Color(0xFF8E8E93),
+                            color = TextSecondary,
                             fontWeight = FontWeight.Medium
                         )
                     }

@@ -62,6 +62,9 @@ class ScentLensViewModel(
                 analogy = profile.analogy,
                 coreFeeling = profile.coreFeeling,
                 localContext = profile.localContext,
+                topNotes = profile.topNotes.joinToString(", "),
+                middleNotes = profile.middleNotes.joinToString(", "),
+                baseNotes = profile.baseNotes.joinToString(", "),
                 isWishlist = false
             )
             repository.addPerfume(perfume)

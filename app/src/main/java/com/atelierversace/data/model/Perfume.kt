@@ -13,6 +13,9 @@ data class Perfume(
     val analogy: String,
     val coreFeeling: String,
     val localContext: String,
+    val topNotes: String = "",
+    val middleNotes: String = "",
+    val baseNotes: String = "",
     val isWishlist: Boolean = false,
     val timestamp: Long = System.currentTimeMillis()
 )

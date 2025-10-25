@@ -30,6 +30,21 @@ class DiscoveryViewModel(
     private val _discoveryState = MutableStateFlow<DiscoveryState>(DiscoveryState.Idle)
     val discoveryState: StateFlow<DiscoveryState> = _discoveryState
 
+    private val _wishlistItems = MutableStateFlow<Set<String>>(emptySet())
+    val wishlistItems: StateFlow<Set<String>> = _wishlistItems
+
+    init {
+        viewModelScope.launch {
+            wishlist.collect { perfumes ->
+                _wishlistItems.value = perfumes.map { "${it.brand}|${it.name}" }.toSet()
+            }
+        }
+    }
+
+    fun isInWishlist(brand: String, name: String): Boolean {
+        return _wishlistItems.value.contains("$brand|$name")
+    }
+
     fun searchPerfumes(query: String) {
         if (query.isBlank()) {
             _discoveryState.value = DiscoveryState.Idle
@@ -57,18 +72,29 @@ class DiscoveryViewModel(
         }
     }
 
-    fun addToWishlist(profile: PersonaProfile) {
+    fun toggleWishlist(profile: PersonaProfile) {
         viewModelScope.launch {
-            val perfume = Perfume(
-                brand = profile.brand,
-                name = profile.name,
-                imageUri = "", // Placeholder
-                analogy = profile.analogy,
-                coreFeeling = profile.coreFeeling,
-                localContext = profile.localContext,
-                isWishlist = true
-            )
-            repository.addPerfume(perfume)
+            val existing = wishlist.value.find {
+                it.brand == profile.brand && it.name == profile.name
+            }
+
+            if (existing != null) {
+                repository.deletePerfume(existing)
+            } else {
+                val perfume = Perfume(
+                    brand = profile.brand,
+                    name = profile.name,
+                    imageUri = "",
+                    analogy = profile.analogy,
+                    coreFeeling = profile.coreFeeling,
+                    localContext = profile.localContext,
+                    topNotes = profile.topNotes.joinToString(", "),
+                    middleNotes = profile.middleNotes.joinToString(", "),
+                    baseNotes = profile.baseNotes.joinToString(", "),
+                    isWishlist = true
+                )
+                repository.addPerfume(perfume)
+            }
         }
     }
 

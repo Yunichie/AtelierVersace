@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.atelierversace.ui.components.GlassCard
+import com.atelierversace.ui.theme.*
 
 @Composable
 fun ScentLensScreen(
@@ -51,19 +52,10 @@ fun ScentLensScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFF5F5F5),
-                        Color(0xFFF8F7FF)
-                    )
-                )
-            )
+            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF))))
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -84,20 +76,18 @@ fun ScentLensScreen(
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 imageVector = Icons.Default.CameraAlt,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
-                                tint = Color(0xFFBBBBBB)
+                                tint = TextSecondary
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Position bottle in frame",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8E8E93)
+                                color = TextSecondary
                             )
                         }
                     }
@@ -106,28 +96,21 @@ fun ScentLensScreen(
 
                     GlassCard(
                         onClick = { galleryLauncher.launch("image/*") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(
                                     Brush.horizontalGradient(
-                                        colors = listOf(
-                                            Color(0xFF6B4EFF),
-                                            Color(0xFF8B6EFF)
-                                        )
+                                        colors = listOf(SkyBlue, LightPeriwinkle)
                                     ),
                                     shape = RoundedCornerShape(20.dp)
                                 )
                                 .padding(vertical = 16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.CameraAlt,
                                     contentDescription = null,
@@ -148,22 +131,20 @@ fun ScentLensScreen(
 
                 is ScentLensState.Loading -> {
                     CircularProgressIndicator(
-                        color = Color(0xFF6B4EFF),
+                        color = SkyBlue,
                         modifier = Modifier.size(48.dp)
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         "Analyzing fragrance...",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color(0xFF8E8E93)
+                        color = TextSecondary
                     )
                 }
 
                 is ScentLensState.Success -> {
                     GlassCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(24.dp),
@@ -173,7 +154,7 @@ fun ScentLensScreen(
                             Text(
                                 text = currentState.brand,
                                 style = MaterialTheme.typography.labelLarge,
-                                color = Color(0xFF8E8E93)
+                                color = TextSecondary
                             )
 
                             Text(
@@ -181,19 +162,16 @@ fun ScentLensScreen(
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.SemiBold
                                 ),
-                                color = Color(0xFF2D2D2D),
+                                color = TextPrimary,
                                 textAlign = TextAlign.Center
                             )
 
-                            Divider(
-                                color = Color(0xFFE0E0E0),
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
+                            Divider(color = Color(0xFFE0E0E0), modifier = Modifier.padding(vertical = 8.dp))
 
                             Text(
                                 text = currentState.profile.analogy,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = Color(0xFF6B4EFF),
+                                color = SkyBlue,
                                 textAlign = TextAlign.Center
                             )
 
@@ -202,14 +180,14 @@ fun ScentLensScreen(
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Medium
                                 ),
-                                color = Color(0xFFFF6B9D),
+                                color = LightPeriwinkle,
                                 textAlign = TextAlign.Center
                             )
 
                             Text(
                                 text = currentState.profile.localContext,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8E8E93),
+                                color = TextSecondary,
                                 textAlign = TextAlign.Center
                             )
 
@@ -232,10 +210,7 @@ fun ScentLensScreen(
                                         .fillMaxWidth()
                                         .background(
                                             Brush.horizontalGradient(
-                                                colors = listOf(
-                                                    Color(0xFF6B4EFF),
-                                                    Color(0xFF8B6EFF)
-                                                )
+                                                colors = listOf(SkyBlue, LightPeriwinkle)
                                             ),
                                             shape = RoundedCornerShape(20.dp)
                                         )
@@ -256,9 +231,7 @@ fun ScentLensScreen(
 
                 is ScentLensState.Error -> {
                     GlassCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(24.dp),
@@ -268,12 +241,12 @@ fun ScentLensScreen(
                             Text(
                                 text = "Unable to identify",
                                 style = MaterialTheme.typography.titleLarge,
-                                color = Color(0xFFFF6B9D)
+                                color = Taupe
                             )
                             Text(
                                 text = currentState.message,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF8E8E93),
+                                color = TextSecondary,
                                 textAlign = TextAlign.Center
                             )
 
@@ -286,7 +259,7 @@ fun ScentLensScreen(
                                         .fillMaxWidth()
                                         .border(
                                             width = 1.5.dp,
-                                            color = Color(0xFF6B4EFF).copy(alpha = 0.3f),
+                                            color = SkyBlue.copy(alpha = 0.3f),
                                             shape = RoundedCornerShape(20.dp)
                                         )
                                         .padding(vertical = 14.dp),
@@ -294,7 +267,7 @@ fun ScentLensScreen(
                                 ) {
                                     Text(
                                         "Try Again",
-                                        color = Color(0xFF6B4EFF),
+                                        color = SkyBlue,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }

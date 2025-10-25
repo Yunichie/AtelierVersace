@@ -6,6 +6,7 @@ import com.google.ai.client.generativeai.type.content
 import com.atelierversace.data.model.PersonaProfile
 import com.atelierversace.data.model.Perfume
 import org.json.JSONObject
+import org.json.JSONArray
 import com.atelierversace.BuildConfig
 
 class GeminiHelper {
@@ -64,7 +65,10 @@ class GeminiHelper {
                     "name": "Perfume Name",
                     "analogy": "A simple, evocative analogy (e.g., 'Smells like a cozy cafe on a rainy day')",
                     "coreFeeling": "One or two words (e.g., 'Comforting & Warm')",
-                    "localContext": "Brief suitability for Surabaya (e.g., 'Best for evenings or air-conditioned rooms')"
+                    "localContext": "Brief suitability for Surabaya (e.g., 'Best for evenings or air-conditioned rooms')",
+                    "topNotes": ["Note1", "Note2", "Note3"],
+                    "middleNotes": ["Note1", "Note2", "Note3"],
+                    "baseNotes": ["Note1", "Note2", "Note3"]
                 }
             """.trimIndent()
 
@@ -73,12 +77,19 @@ class GeminiHelper {
 
             val json = JSONObject(jsonText)
 
+            val topNotesArray = json.getJSONArray("topNotes")
+            val middleNotesArray = json.getJSONArray("middleNotes")
+            val baseNotesArray = json.getJSONArray("baseNotes")
+
             return PersonaProfile(
                 brand = json.getString("brand"),
                 name = json.getString("name"),
                 analogy = json.getString("analogy"),
                 coreFeeling = json.getString("coreFeeling"),
-                localContext = json.getString("localContext")
+                localContext = json.getString("localContext"),
+                topNotes = (0 until topNotesArray.length()).map { topNotesArray.getString(it) },
+                middleNotes = (0 until middleNotesArray.length()).map { middleNotesArray.getString(it) },
+                baseNotes = (0 until baseNotesArray.length()).map { baseNotesArray.getString(it) }
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -87,7 +98,10 @@ class GeminiHelper {
                 name = name,
                 analogy = "A mysterious and elegant scent",
                 coreFeeling = "Sophisticated",
-                localContext = "Versatile for various occasions"
+                localContext = "Versatile for various occasions",
+                topNotes = listOf("Fresh", "Citrus", "Bergamot"),
+                middleNotes = listOf("Floral", "Jasmine", "Rose"),
+                baseNotes = listOf("Woody", "Amber", "Musk")
             )
         }
     }
@@ -155,7 +169,10 @@ class GeminiHelper {
                         "name": "Perfume Name",
                         "analogy": "Evocative analogy",
                         "coreFeeling": "Feeling words",
-                        "localContext": "Suitability for Surabaya climate"
+                        "localContext": "Suitability for Surabaya climate",
+                        "topNotes": ["Note1", "Note2", "Note3"],
+                        "middleNotes": ["Note1", "Note2", "Note3"],
+                        "baseNotes": ["Note1", "Note2", "Note3"]
                     }
                 ]
             """.trimIndent()
@@ -163,19 +180,25 @@ class GeminiHelper {
             val response = textModel.generateContent(prompt)
             val jsonText = response.text?.trim() ?: return emptyList()
 
-            // Parse JSON array
-            val jsonArray = org.json.JSONArray(jsonText)
+            val jsonArray = JSONArray(jsonText)
             val profiles = mutableListOf<PersonaProfile>()
 
             for (i in 0 until jsonArray.length()) {
                 val json = jsonArray.getJSONObject(i)
+                val topNotesArray = json.getJSONArray("topNotes")
+                val middleNotesArray = json.getJSONArray("middleNotes")
+                val baseNotesArray = json.getJSONArray("baseNotes")
+
                 profiles.add(
                     PersonaProfile(
                         brand = json.getString("brand"),
                         name = json.getString("name"),
                         analogy = json.getString("analogy"),
                         coreFeeling = json.getString("coreFeeling"),
-                        localContext = json.getString("localContext")
+                        localContext = json.getString("localContext"),
+                        topNotes = (0 until topNotesArray.length()).map { topNotesArray.getString(it) },
+                        middleNotes = (0 until middleNotesArray.length()).map { middleNotesArray.getString(it) },
+                        baseNotes = (0 until baseNotesArray.length()).map { baseNotesArray.getString(it) }
                     )
                 )
             }

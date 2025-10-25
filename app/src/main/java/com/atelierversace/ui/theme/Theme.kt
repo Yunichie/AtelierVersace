@@ -5,12 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = AccentPurple,
-    secondary = AccentPink,
-    background = GlassBackground,
+    primary = SkyBlue,
+    secondary = LightPeriwinkle,
+    tertiary = Taupe,
+    background = Cream,
     surface = GlassSurface,
     onPrimary = Color.White,
     onSecondary = Color.White,
+    onTertiary = Color.White,
     onBackground = TextPrimary,
     onSurface = TextPrimary
 )
