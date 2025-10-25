@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -37,11 +40,13 @@ import com.atelierversace.ui.wardrobe.WardrobeScreen
 import com.atelierversace.ui.wardrobe.WardrobeViewModel
 import com.atelierversace.ui.discovery.DiscoveryScreen
 import com.atelierversace.ui.discovery.DiscoveryViewModel
+import com.atelierversace.ui.wishlist.WishlistScreen
 
 sealed class Screen(val route: String) {
     object ScentLens : Screen("scent_lens")
     object Wardrobe : Screen("wardrobe")
     object Discovery : Screen("discovery")
+    object Wishlist : Screen("wishlist")
 }
 
 @Composable
@@ -72,7 +77,8 @@ fun AtelierVersaceApp(
                     listOf(
                         Screen.ScentLens,
                         Screen.Wardrobe,
-                        Screen.Discovery
+                        Screen.Discovery,
+                        Screen.Wishlist
                     ).forEach { screen ->
                         val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
 
@@ -110,6 +116,12 @@ fun AtelierVersaceApp(
                                     contentDescription = null,
                                     Modifier.size(28.dp)
                                 )
+
+                                is Screen.Wishlist -> Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = null,
+                                    Modifier.size(28.dp)
+                                )
                             }
                         }
                     }
@@ -119,7 +131,7 @@ fun AtelierVersaceApp(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.ScentLens.route,
+            startDestination = Screen.Discovery.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.ScentLens.route) {
@@ -137,6 +149,10 @@ fun AtelierVersaceApp(
 
             composable(Screen.Discovery.route) {
                 DiscoveryScreen(viewModel = discoveryViewModel)
+            }
+
+            composable(Screen.Wishlist.route) {
+                WishlistScreen(viewModel = discoveryViewModel)
             }
         }
     }
