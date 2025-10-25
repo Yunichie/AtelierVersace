@@ -53,7 +53,7 @@ class ScentLensViewModel(
         }
     }
 
-    fun addToWardrobe(brand: String, name: String, profile: PersonaProfile, imageUri: String) {
+    fun addToWardrobe(brand: String, name: String, profile: PersonaProfile, imageUri: String, onComplete: () -> Unit) {
         viewModelScope.launch {
             val perfume = Perfume(
                 brand = brand,
@@ -69,6 +69,7 @@ class ScentLensViewModel(
             )
             repository.addPerfume(perfume)
             _state.value = ScentLensState.Idle
+            onComplete()
         }
     }
 

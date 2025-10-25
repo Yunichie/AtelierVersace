@@ -100,25 +100,25 @@ fun AtelierVersaceApp(
                                 MaterialTheme.colorScheme.onSurface.copy(0.6f)
                             when(screen) {
                                 is Screen.ScentLens -> Icon(
-                                    Icons.Filled.PhotoCamera,
+                                    painterResource(id = R.drawable.scent_lens_24),
                                     contentDescription = null,
                                     Modifier.size(28.dp)
                                 )
 
                                 is Screen.Wardrobe -> Icon(
-                                    Icons.Filled.Home,
+                                    painterResource(id = R.drawable.wardrobe_24),
                                     contentDescription = null,
                                     Modifier.size(28.dp)
                                 )
 
                                 is Screen.Discovery -> Icon(
-                                    Icons.Filled.Search,
+                                    painterResource(id = R.drawable.search_24),
                                     contentDescription = null,
                                     Modifier.size(28.dp)
                                 )
 
                                 is Screen.Wishlist -> Icon(
-                                    Icons.Filled.Star,
+                                    painterResource(id = R.drawable.heart_24),
                                     contentDescription = null,
                                     Modifier.size(28.dp)
                                 )

@@ -9,6 +9,7 @@ import com.atelierversace.utils.GeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -25,24 +26,23 @@ class DiscoveryViewModel(
 ) : ViewModel() {
 
     val wishlist = repository.getWishlist()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _discoveryState = MutableStateFlow<DiscoveryState>(DiscoveryState.Idle)
     val discoveryState: StateFlow<DiscoveryState> = _discoveryState
 
-    private val _wishlistItems = MutableStateFlow<Set<String>>(emptySet())
-    val wishlistItems: StateFlow<Set<String>> = _wishlistItems
+    // Track wishlist updates with a trigger
+    private val _wishlistUpdateTrigger = MutableStateFlow(0)
 
-    init {
-        viewModelScope.launch {
-            wishlist.collect { perfumes ->
-                _wishlistItems.value = perfumes.map { "${it.brand}|${it.name}" }.toSet()
-            }
-        }
-    }
+    val wishlistItems: StateFlow<Set<String>> = combine(
+        wishlist,
+        _wishlistUpdateTrigger
+    ) { perfumes, _ ->
+        perfumes.map { "${it.brand}|${it.name}" }.toSet()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     fun isInWishlist(brand: String, name: String): Boolean {
-        return _wishlistItems.value.contains("$brand|$name")
+        return wishlistItems.value.contains("$brand|$name")
     }
 
     fun searchPerfumes(query: String) {
@@ -95,12 +95,17 @@ class DiscoveryViewModel(
                 )
                 repository.addPerfume(perfume)
             }
+
+            // Trigger immediate UI update
+            _wishlistUpdateTrigger.value++
         }
     }
 
     fun removeFromWishlist(perfume: Perfume) {
         viewModelScope.launch {
             repository.deletePerfume(perfume)
+            // Trigger immediate UI update
+            _wishlistUpdateTrigger.value++
         }
     }
 

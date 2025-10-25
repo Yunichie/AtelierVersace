@@ -9,6 +9,7 @@ import com.atelierversace.utils.GeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,10 +27,34 @@ class WardrobeViewModel(
 ) : ViewModel() {
 
     val wardrobe = perfumeRepository.getWardrobe()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _recommendationState = MutableStateFlow<RecommendationState>(RecommendationState.Idle)
     val recommendationState: StateFlow<RecommendationState> = _recommendationState
+
+    // Track favorites
+    private val _favoriteUpdateTrigger = MutableStateFlow(0)
+    private val _favorites = MutableStateFlow<Set<Int>>(emptySet())
+
+    val favorites: StateFlow<Set<Int>> = combine(
+        wardrobe,
+        _favoriteUpdateTrigger
+    ) { perfumes, _ ->
+        _favorites.value
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
+    fun isFavorite(perfumeId: Int): Boolean {
+        return _favorites.value.contains(perfumeId)
+    }
+
+    fun toggleFavorite(perfumeId: Int) {
+        _favorites.value = if (_favorites.value.contains(perfumeId)) {
+            _favorites.value - perfumeId
+        } else {
+            _favorites.value + perfumeId
+        }
+        _favoriteUpdateTrigger.value++
+    }
 
     fun getRecommendation(occasion: String) {
         viewModelScope.launch {

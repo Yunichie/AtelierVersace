@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -140,6 +141,41 @@ fun ScentLensScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary
                     )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Cancel button during loading
+                    GlassCard(
+                        onClick = { viewModel.reset() },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(
+                                    width = 1.5.dp,
+                                    color = Taupe.copy(alpha = 0.3f),
+                                    shape = RoundedCornerShape(20.dp)
+                                )
+                                .padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = null,
+                                    tint = Taupe,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Cancel",
+                                    color = Taupe,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
                 }
 
                 is ScentLensState.Success -> {
@@ -193,6 +229,7 @@ fun ScentLensScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
+                            // Add to Wardrobe button
                             GlassCard(
                                 onClick = {
                                     viewModel.addToWardrobe(
@@ -200,8 +237,9 @@ fun ScentLensScreen(
                                         currentState.name,
                                         currentState.profile,
                                         currentState.imageUri
-                                    )
-                                    onNavigateToWardrobe()
+                                    ) {
+                                        onNavigateToWardrobe()
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -222,6 +260,30 @@ fun ScentLensScreen(
                                         color = Color.White,
                                         fontWeight = FontWeight.Medium,
                                         fontSize = 16.sp
+                                    )
+                                }
+                            }
+
+                            // Cancel button
+                            GlassCard(
+                                onClick = { viewModel.reset() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .border(
+                                            width = 1.5.dp,
+                                            color = TextSecondary.copy(alpha = 0.3f),
+                                            shape = RoundedCornerShape(20.dp)
+                                        )
+                                        .padding(vertical = 14.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Cancel",
+                                        color = TextSecondary,
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
@@ -250,6 +312,32 @@ fun ScentLensScreen(
                                 textAlign = TextAlign.Center
                             )
 
+                            // Retry button
+                            GlassCard(
+                                onClick = { galleryLauncher.launch("image/*") },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(SkyBlue, LightPeriwinkle)
+                                            ),
+                                            shape = RoundedCornerShape(20.dp)
+                                        )
+                                        .padding(vertical = 14.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        "Retry",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            // Cancel button
                             GlassCard(
                                 onClick = { viewModel.reset() },
                                 modifier = Modifier.fillMaxWidth()
@@ -259,15 +347,15 @@ fun ScentLensScreen(
                                         .fillMaxWidth()
                                         .border(
                                             width = 1.5.dp,
-                                            color = SkyBlue.copy(alpha = 0.3f),
+                                            color = TextSecondary.copy(alpha = 0.3f),
                                             shape = RoundedCornerShape(20.dp)
                                         )
                                         .padding(vertical = 14.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        "Try Again",
-                                        color = SkyBlue,
+                                        "Cancel",
+                                        color = TextSecondary,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }

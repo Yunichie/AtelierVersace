@@ -8,13 +8,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.atelierversace.R
 
-// Note: Add these font files to res/font/ directory:
-// - playfair_display_regular.ttf
-// - playfair_display_bold.ttf
-// - raleway_regular.ttf
-// - raleway_medium.ttf
-// - raleway_bold.ttf
-
 val PlayfairDisplay = FontFamily(
     Font(R.font.playfair_display_regular, FontWeight.Normal),
     Font(R.font.playfair_display_bold, FontWeight.Bold)
