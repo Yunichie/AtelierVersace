@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -40,6 +41,10 @@ import com.atelierversace.ui.wardrobe.WardrobeScreen
 import com.atelierversace.ui.wardrobe.WardrobeViewModel
 import com.atelierversace.ui.discovery.DiscoveryScreen
 import com.atelierversace.ui.discovery.DiscoveryViewModel
+import com.atelierversace.ui.theme.Cream
+import com.atelierversace.ui.theme.GlassBackground
+import com.atelierversace.ui.theme.GlassSurface
+import com.atelierversace.ui.theme.LightPeriwinkle
 import com.atelierversace.ui.wishlist.WishlistScreen
 
 sealed class Screen(val route: String) {
@@ -57,82 +62,17 @@ fun AtelierVersaceApp(
 ) {
     val navController = rememberNavController()
 
-    Scaffold(
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .padding(bottom = 32.dp, start = 36.dp, end = 36.dp)
-                    .shadow(8.dp, RoundedCornerShape(36.dp))
-                    .clip(RoundedCornerShape(36.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentDestination = navBackStackEntry?.destination
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
 
-                    listOf(
-                        Screen.ScentLens,
-                        Screen.Wardrobe,
-                        Screen.Discovery,
-                        Screen.Wishlist
-                    ).forEach { screen ->
-                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-
-                        IconButton(
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            modifier = Modifier.size(28.dp)
-                        ) {
-                            val iconTint = if(isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(0.6f)
-                            when(screen) {
-                                is Screen.ScentLens -> Icon(
-                                    painterResource(id = R.drawable.scent_lens_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
-
-                                is Screen.Wardrobe -> Icon(
-                                    painterResource(id = R.drawable.wardrobe_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
-
-                                is Screen.Discovery -> Icon(
-                                    painterResource(id = R.drawable.search_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
-
-                                is Screen.Wishlist -> Icon(
-                                    painterResource(id = R.drawable.heart_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Transparent)
+    ) {
         NavHost(
             navController = navController,
             startDestination = Screen.Discovery.route,
-            modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.ScentLens.route) {
                 ScentLensScreen(
@@ -159,6 +99,79 @@ fun AtelierVersaceApp(
 
             composable(Screen.Wishlist.route) {
                 WishlistScreen(viewModel = discoveryViewModel)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp, start = 36.dp, end = 36.dp)
+                .clip(RoundedCornerShape(36.dp))
+                .background(MaterialTheme.colorScheme.surface)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
+                    .background(Color.Transparent),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                listOf(
+                    Screen.ScentLens,
+                    Screen.Wardrobe,
+                    Screen.Discovery,
+                    Screen.Wishlist
+                ).forEach { screen ->
+                    val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+
+                    IconButton(
+                        onClick = {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        val iconTint = if(isSelected)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(0.6f)
+                        when(screen) {
+                            is Screen.ScentLens -> Icon(
+                                painterResource(id = R.drawable.scent_lens_24),
+                                contentDescription = null,
+                                tint = iconTint,
+                                modifier = Modifier.size(28.dp),
+                            )
+
+                            is Screen.Wardrobe -> Icon(
+                                painterResource(id = R.drawable.wardrobe_24),
+                                contentDescription = null,
+                                tint = iconTint,
+                                modifier = Modifier.size(28.dp)
+                            )
+
+                            is Screen.Discovery -> Icon(
+                                painterResource(id = R.drawable.search_24),
+                                contentDescription = null,
+                                tint = iconTint,
+                                modifier = Modifier.size(28.dp)
+                            )
+
+                            is Screen.Wishlist -> Icon(
+                                painterResource(id = R.drawable.heart_24),
+                                contentDescription = null,
+                                tint = iconTint,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
