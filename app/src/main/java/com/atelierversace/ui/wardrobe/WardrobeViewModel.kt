@@ -55,7 +55,7 @@ class WardrobeViewModel(
         _favoriteUpdateTrigger.value++
     }
 
-    fun getRecommendation(occasion: String) {
+    fun getRecommendation(userQuery: String) {
         viewModelScope.launch {
             _recommendationState.value = RecommendationState.Loading
 
@@ -78,11 +78,15 @@ class WardrobeViewModel(
                 }
 
                 val weather = weatherResult.getOrThrow()
-                val recommendation = geminiHelper.recommendPerfume(perfumes, weather, occasion)
+                val recommendation = geminiHelper.recommendPerfumeWithQuery(
+                    perfumes,
+                    weather,
+                    userQuery
+                )
 
                 if (recommendation == null) {
                     _recommendationState.value = RecommendationState.Error(
-                        "Could not generate recommendation"
+                        "Could not generate recommendation. Please try again."
                     )
                     return@launch
                 }
@@ -93,7 +97,7 @@ class WardrobeViewModel(
                 )
             } catch (e: Exception) {
                 _recommendationState.value = RecommendationState.Error(
-                    e.message ?: "Unknown error"
+                    e.message ?: "Unknown error occurred"
                 )
             }
         }

@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.atelierversace.data.model.Perfume
-import com.atelierversace.ui.components.GlassCard
+import com.atelierversace.ui.components.*
 import com.atelierversace.ui.theme.*
 
 @Composable
@@ -36,8 +36,7 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
     val recommendationState by viewModel.recommendationState.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
 
-    var showOccasionDialog by remember { mutableStateOf(false) }
-    var showRecommendationDialog by remember { mutableStateOf(false) }
+    var showRecommendationInput by remember { mutableStateOf(false) }
     var selectedPerfume by remember { mutableStateOf<Perfume?>(null) }
 
     Box(
@@ -121,6 +120,29 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextSecondary
                             )
+
+                            if (wardrobe.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                GlassButton(
+                                    onClick = { showRecommendationInput = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Get AI Recommendation",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 15.sp
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -201,25 +223,152 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
         }
     }
 
-    if (showOccasionDialog) {
-        OccasionDialog(
-            onDismiss = { showOccasionDialog = false },
-            onSelect = { occasion: String ->
-                showOccasionDialog = false
-                viewModel.getRecommendation(occasion)
-                showRecommendationDialog = true
+    if (showRecommendationInput) {
+        RecommendationInputDialog(
+            onDismiss = { showRecommendationInput = false },
+            onSubmit = { query ->
+                showRecommendationInput = false
+                viewModel.getRecommendation(query)
             }
         )
     }
 
-    if (showRecommendationDialog) {
+    if (recommendationState is RecommendationState.Loading ||
+        recommendationState is RecommendationState.Success ||
+        recommendationState is RecommendationState.Error) {
         RecommendationDialog(
             state = recommendationState,
             onDismiss = {
-                showRecommendationDialog = false
                 viewModel.resetRecommendation()
             }
         )
+    }
+}
+
+@Composable
+private fun RecommendationInputDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)),
+        contentAlignment = Alignment.Center
+    ) {
+        GlassCard(
+            modifier = Modifier.padding(32.dp),
+            backgroundColor = Color.White.copy(alpha = 0.95f),
+            borderColor = Color.White.copy(alpha = 0.6f),
+            cornerRadius = 28.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(28.dp).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    GlassIconContainer(
+                        backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                        borderColor = SkyBlue.copy(alpha = 0.3f),
+                        size = 48.dp
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = SkyBlue,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "AI Recommendation",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
+                }
+
+                Text(
+                    text = "Describe your mood, occasion, or what you're looking for",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.3f),
+                    borderColor = Color.White.copy(alpha = 0.5f)
+                ) {
+                    TextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(
+                                "e.g., something fresh for work, romantic evening scent...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary.copy(alpha = 0.6f)
+                            )
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = SkyBlue
+                        ),
+                        minLines = 3,
+                        maxLines = 5
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedGlassButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        borderColor = TextSecondary.copy(alpha = 0.3f)
+                    ) {
+                        Text(
+                            "Cancel",
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    GlassButton(
+                        onClick = {
+                            if (query.isNotBlank()) {
+                                onSubmit(query)
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "Recommend",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -322,7 +471,6 @@ private fun EnhancedPerfumeGridItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Brand Badge
             Surface(
                 shape = RoundedCornerShape(6.dp),
                 color = SkyBlue.copy(alpha = 0.15f),
@@ -338,7 +486,6 @@ private fun EnhancedPerfumeGridItem(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Perfume Name
             Text(
                 text = perfume.name,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -349,7 +496,6 @@ private fun EnhancedPerfumeGridItem(
                 color = TextPrimary
             )
 
-            // Analogy
             Text(
                 text = perfume.analogy,
                 style = MaterialTheme.typography.bodySmall,
@@ -386,63 +532,37 @@ private fun PerfumeDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
+                    GlassIconButton(
                         onClick = onBack,
-                        modifier = Modifier.size(48.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color.White.copy(alpha = 0.25f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
+                        size = 48.dp
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Back",
-                                tint = TextPrimary
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TextPrimary
+                        )
                     }
 
-                    Surface(
+                    GlassIconButton(
                         onClick = onToggleFavorite,
-                        modifier = Modifier.size(48.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (isFavorite) {
-                            LightPeriwinkle.copy(alpha = 0.25f)
-                        } else {
-                            Color.White.copy(alpha = 0.25f)
-                        },
-                        border = BorderStroke(
-                            1.dp,
-                            if (isFavorite) {
-                                LightPeriwinkle.copy(alpha = 0.5f)
-                            } else {
-                                Color.White.copy(alpha = 0.4f)
-                            }
-                        )
+                        size = 48.dp,
+                        isActive = isFavorite,
+                        activeColor = LightPeriwinkle
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Icon(
-                                imageVector = if (isFavorite) {
-                                    Icons.Filled.Favorite
-                                } else {
-                                    Icons.Outlined.FavoriteBorder
-                                },
-                                contentDescription = "Favorite",
-                                tint = if (isFavorite) LightPeriwinkle else TextSecondary
-                            )
-                        }
+                        Icon(
+                            imageVector = if (isFavorite) {
+                                Icons.Filled.Favorite
+                            } else {
+                                Icons.Outlined.FavoriteBorder
+                            },
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) LightPeriwinkle else TextSecondary
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Image Card
                 GlassCard(
                     modifier = Modifier.fillMaxWidth().height(250.dp),
                     backgroundColor = Color.White.copy(alpha = 0.25f),
@@ -472,20 +592,12 @@ private fun PerfumeDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Brand Badge
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = SkyBlue.copy(alpha = 0.15f),
-                    border = BorderStroke(1.dp, SkyBlue.copy(alpha = 0.3f))
-                ) {
-                    Text(
-                        text = perfume.brand,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = SkyBlue,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
+                GlassBadge(
+                    text = perfume.brand,
+                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                    borderColor = SkyBlue.copy(alpha = 0.3f),
+                    textColor = SkyBlue
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -509,22 +621,16 @@ private fun PerfumeDetailScreen(
                         verticalAlignment = Alignment.Top,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = SkyBlue.copy(alpha = 0.15f),
-                            modifier = Modifier.size(40.dp)
+                        GlassIconContainer(
+                            backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                            borderColor = SkyBlue.copy(alpha = 0.3f)
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = SkyBlue,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = SkyBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                         Text(
                             text = perfume.analogy,
@@ -673,102 +779,7 @@ private fun NotesCardDetail(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 notes.take(3).forEach { note ->
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color.White.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
-                    ) {
-                        Text(
-                            text = note,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextPrimary
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun OccasionDialog(
-    onDismiss: () -> Unit,
-    onSelect: (String) -> Unit
-) {
-    val occasions = listOf("Work", "Casual", "Date Night", "Formal Event")
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.4f)),
-        contentAlignment = Alignment.Center
-    ) {
-        GlassCard(
-            modifier = Modifier.padding(32.dp),
-            backgroundColor = Color.White.copy(alpha = 0.95f),
-            borderColor = Color.White.copy(alpha = 0.6f),
-            cornerRadius = 28.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(28.dp).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "Select Occasion",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = TextPrimary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    occasions.forEach { occasion ->
-                        GlassCard(
-                            onClick = { onSelect(occasion) },
-                            modifier = Modifier.fillMaxWidth(),
-                            backgroundColor = Color.White.copy(alpha = 0.3f),
-                            borderColor = Color.White.copy(alpha = 0.5f),
-                            cornerRadius = 16.dp
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    occasion,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = TextPrimary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                GlassCard(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color.White.copy(alpha = 0.1f),
-                    borderColor = TextSecondary.copy(alpha = 0.3f),
-                    borderWidth = 1.5.dp
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "Cancel",
-                            color = TextSecondary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    GlassChip(text = note)
                 }
             }
         }
@@ -815,7 +826,7 @@ private fun RecommendationDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Star,
+                                imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
                                 modifier = Modifier.size(40.dp),
                                 tint = SkyBlue
@@ -831,7 +842,6 @@ private fun RecommendationDialog(
                             textAlign = TextAlign.Center
                         )
 
-                        // Perfume Card
                         GlassCard(
                             modifier = Modifier.fillMaxWidth(),
                             backgroundColor = Color.White.copy(alpha = 0.4f),
@@ -851,7 +861,8 @@ private fun RecommendationDialog(
                                             .background(
                                                 Brush.verticalGradient(
                                                     colors = listOf(
-                                                        Color.White.copy(alpha = 0.3f)
+                                                        Color.White.copy(alpha = 0.3f),
+                                                        Color.White.copy(alpha = 0.2f)
                                                     )
                                                 )
                                             )
@@ -870,19 +881,12 @@ private fun RecommendationDialog(
                                     }
                                 }
 
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = SkyBlue.copy(alpha = 0.2f),
-                                    border = BorderStroke(1.dp, SkyBlue.copy(alpha = 0.3f))
-                                ) {
-                                    Text(
-                                        text = state.perfume.brand,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = SkyBlue,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                    )
-                                }
+                                GlassBadge(
+                                    text = state.perfume.brand,
+                                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                                    borderColor = SkyBlue.copy(alpha = 0.3f),
+                                    textColor = SkyBlue
+                                )
 
                                 Text(
                                     text = state.perfume.name,
@@ -892,65 +896,43 @@ private fun RecommendationDialog(
                                     color = TextPrimary
                                 )
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(1.dp)
-                                        .background(
-                                            Brush.horizontalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    Color.White.copy(alpha = 0.5f),
-                                                    Color.Transparent
-                                                )
-                                            )
-                                        )
-                                )
+                                GlassDivider()
 
                                 Row(
                                     verticalAlignment = Alignment.Top,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = null,
-                                        tint = SkyBlue,
-                                        modifier = Modifier.size(20.dp)
-                                    )
+                                    GlassIconContainer(
+                                        backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                                        borderColor = SkyBlue.copy(alpha = 0.3f),
+                                        size = 36.dp
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.WbSunny,
+                                            contentDescription = null,
+                                            tint = SkyBlue,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                     Text(
                                         text = state.reason,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = SkyBlue,
+                                        color = TextPrimary,
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
                         }
 
-                        GlassCard(
+                        GlassButton(
                             onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth(),
-                            backgroundColor = Color.Transparent,
-                            borderColor = Color.White.copy(alpha = 0.4f)
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        Brush.horizontalGradient(
-                                            colors = listOf(SkyBlue, LightPeriwinkle)
-                                        ),
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .padding(vertical = 14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "Perfect!",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
+                            Text(
+                                "Perfect!",
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }
@@ -963,20 +945,53 @@ private fun RecommendationDialog(
                     .background(Color.Black.copy(alpha = 0.4f)),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                GlassCard(
+                    modifier = Modifier.padding(32.dp),
+                    backgroundColor = Color.White.copy(alpha = 0.95f),
+                    borderColor = Color.White.copy(alpha = 0.6f),
+                    cornerRadius = 28.dp
                 ) {
-                    CircularProgressIndicator(
-                        color = SkyBlue,
-                        modifier = Modifier.size(48.dp),
-                        strokeWidth = 3.dp
-                    )
-                    Text(
-                        "Finding your perfect scent...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
-                    )
+                    Column(
+                        modifier = Modifier.padding(40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            SkyBlue.copy(alpha = 0.2f),
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                                .border(2.dp, SkyBlue.copy(alpha = 0.3f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = SkyBlue,
+                                modifier = Modifier.size(48.dp),
+                                strokeWidth = 3.dp
+                            )
+                        }
+
+                        Text(
+                            "Analyzing your wardrobe...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Text(
+                            "Considering weather & your preferences",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
@@ -1038,28 +1053,15 @@ private fun RecommendationDialog(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        GlassCard(
+                        GlassButton(
                             onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth(),
-                            backgroundColor = Color.Transparent,
-                            borderColor = Color.White.copy(alpha = 0.4f)
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        SkyBlue,
-                                        shape = RoundedCornerShape(20.dp)
-                                    )
-                                    .padding(vertical = 14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    "Close",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
+                            Text(
+                                "Close",
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                 }

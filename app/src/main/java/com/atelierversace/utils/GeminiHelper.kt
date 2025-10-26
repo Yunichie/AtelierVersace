@@ -153,6 +153,58 @@ class GeminiHelper {
         }
     }
 
+    suspend fun recommendPerfumeWithQuery(
+        perfumes: List<Perfume>,
+        weather: WeatherData,
+        userQuery: String
+    ): Pair<Perfume, String>? {
+        if (perfumes.isEmpty()) return null
+
+        try {
+            val perfumeList = perfumes.joinToString("\n") {
+                "${it.id}. ${it.brand} ${it.name} - ${it.analogy} (${it.coreFeeling}) [${it.localContext}]"
+            }
+
+            val prompt = """
+                Recommend ONE perfume from this list based on the user's request:
+                
+                User's Request: "$userQuery"
+                
+                Available Perfumes:
+                $perfumeList
+                
+                Current Context:
+                - Weather: ${weather.temperature}°C, ${weather.humidity}% humidity, ${weather.description}
+                - Location: Surabaya, Indonesia (tropical, humid climate)
+                
+                Consider:
+                1. User's mood/occasion from their query
+                2. Current weather conditions
+                3. Perfume characteristics and suitability
+                
+                Respond ONLY with a JSON object WITHOUT codeblock:
+                {
+                    "perfumeId": <the id number>,
+                    "reason": "2-3 sentences explaining why this perfume matches their request and current weather"
+                }
+            """.trimIndent()
+
+            val response = textModel.generateContent(prompt)
+            val jsonText = response.text?.trim() ?: return null
+            val json = JSONObject(jsonText)
+
+            val perfumeId = json.getInt("perfumeId")
+            val reason = json.getString("reason")
+
+            val selectedPerfume = perfumes.find { it.id == perfumeId }
+
+            return selectedPerfume?.let { it to reason }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return null
+        }
+    }
+
     suspend fun discoverPerfumes(query: String): List<PersonaProfile> {
         try {
             val prompt = """
