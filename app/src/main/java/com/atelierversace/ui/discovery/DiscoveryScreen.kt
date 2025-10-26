@@ -2,14 +2,11 @@ package com.atelierversace.ui.discovery
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -17,7 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -25,7 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.atelierversace.data.model.PersonaProfile
-import com.atelierversace.ui.components.GlassCard
+import com.atelierversace.ui.components.*
 import com.atelierversace.ui.theme.*
 
 @Composable
@@ -89,7 +85,9 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
 
                         GlassCard(
                             onClick = { isSearchExpanded = true },
-                            modifier = Modifier.padding(horizontal = 40.dp).height(56.dp)
+                            modifier = Modifier.padding(horizontal = 40.dp).height(56.dp),
+                            backgroundColor = Color.White.copy(alpha = 0.25f),
+                            borderColor = Color.White.copy(alpha = 0.5f)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
@@ -112,13 +110,16 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                         }
                     }
                 } else {
-                    // Expanded State
                     Column(modifier = Modifier.fillMaxSize()) {
                         Surface(modifier = Modifier.fillMaxWidth(), color = Color.Transparent) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                GlassCard(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                                    borderColor = Color.White.copy(alpha = 0.4f)
+                                ) {
                                     Row(
                                         modifier = Modifier.padding(16.dp),
                                         verticalAlignment = Alignment.CenterVertically
@@ -138,9 +139,9 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                                             modifier = Modifier.weight(1f),
                                             placeholder = {
                                                 Text(
-                                                    "search fragrances...",
+                                                    "describe your perfect scent...",
                                                     style = MaterialTheme.typography.bodyMedium,
-                                                    color = TextSecondary
+                                                    color = TextSecondary.copy(alpha = 0.7f)
                                                 )
                                             },
                                             colors = TextFieldDefaults.colors(
@@ -170,28 +171,23 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
-                                GlassCard(
+                                GlassButton(
                                     onClick = { viewModel.searchPerfumes(query) },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(
-                                                Brush.horizontalGradient(
-                                                    colors = listOf(SkyBlue, LightPeriwinkle)
-                                                ),
-                                                shape = RoundedCornerShape(20.dp)
-                                            )
-                                            .padding(vertical = 14.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            "Search",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Discover",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 16.sp
+                                    )
                                 }
                             }
                         }
@@ -211,7 +207,21 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                                             modifier = Modifier.fillMaxWidth().padding(32.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            CircularProgressIndicator(color = SkyBlue)
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    color = SkyBlue,
+                                                    modifier = Modifier.size(48.dp),
+                                                    strokeWidth = 3.dp
+                                                )
+                                                Text(
+                                                    "Finding your perfect scent...",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = TextSecondary
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -220,115 +230,170 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                                     items(state.recommendations) { profile ->
                                         val isInWishlist = wishlistItems.contains("${profile.brand}|${profile.name}")
 
-                                        GlassCard(
+                                        EnhancedResultCard(
+                                            profile = profile,
+                                            isInWishlist = isInWishlist,
                                             onClick = { selectedProfile = profile },
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Column(
-                                                modifier = Modifier.padding(20.dp),
-                                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                                            ) {
-                                                if (profile.brand.isNotEmpty() && profile.name.isNotEmpty()) {
-                                                    Text(
-                                                        text = profile.brand,
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        color = TextSecondary
-                                                    )
-                                                    Text(
-                                                        text = profile.name,
-                                                        style = MaterialTheme.typography.titleLarge,
-                                                        color = TextPrimary
-                                                    )
-                                                }
-
-                                                Text(
-                                                    text = profile.analogy,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = SkyBlue
-                                                )
-
-                                                Text(
-                                                    text = profile.coreFeeling,
-                                                    style = MaterialTheme.typography.bodyLarge,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = LightPeriwinkle
-                                                )
-
-                                                Text(
-                                                    text = profile.localContext,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = TextSecondary
-                                                )
-
-                                                GlassCard(
-                                                    onClick = { viewModel.toggleWishlist(profile) },
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .border(
-                                                                width = 1.5.dp,
-                                                                color = if (isInWishlist)
-                                                                    LightPeriwinkle.copy(alpha = 0.5f)
-                                                                else
-                                                                    LightPeriwinkle.copy(alpha = 0.3f),
-                                                                shape = RoundedCornerShape(20.dp)
-                                                            )
-                                                            .background(
-                                                                if (isInWishlist)
-                                                                    LightPeriwinkle.copy(alpha = 0.2f)
-                                                                else
-                                                                    Color.Transparent,
-                                                                shape = RoundedCornerShape(20.dp)
-                                                            )
-                                                            .padding(vertical = 12.dp),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            Icon(
-                                                                imageVector = if (isInWishlist)
-                                                                    Icons.Filled.Favorite
-                                                                else
-                                                                    Icons.Outlined.FavoriteBorder,
-                                                                contentDescription = null,
-                                                                tint = LightPeriwinkle,
-                                                                modifier = Modifier.size(18.dp)
-                                                            )
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Text(
-                                                                if (isInWishlist) "Added to Wishlist" else "Add to Wishlist",
-                                                                color = LightPeriwinkle,
-                                                                fontWeight = FontWeight.Medium
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                                            onToggleWishlist = { viewModel.toggleWishlist(profile) }
+                                        )
                                     }
                                 }
 
                                 is DiscoveryState.Error -> {
                                     item {
-                                        GlassCard(modifier = Modifier.fillMaxWidth()) {
+                                        GlassCard(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            backgroundColor = Color.White.copy(alpha = 0.25f),
+                                            borderColor = Color.White.copy(alpha = 0.4f)
+                                        ) {
                                             Box(
-                                                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                                                modifier = Modifier.fillMaxWidth().padding(24.dp),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Text(
-                                                    text = state.message,
-                                                    color = Taupe,
-                                                    textAlign = TextAlign.Center
-                                                )
+                                                Column(
+                                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Info,
+                                                        contentDescription = null,
+                                                        tint = Taupe,
+                                                        modifier = Modifier.size(32.dp)
+                                                    )
+                                                    Text(
+                                                        text = state.message,
+                                                        color = Taupe,
+                                                        textAlign = TextAlign.Center,
+                                                        style = MaterialTheme.typography.bodyMedium
+                                                    )
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EnhancedResultCard(
+    profile: PersonaProfile,
+    isInWishlist: Boolean,
+    onClick: () -> Unit,
+    onToggleWishlist: () -> Unit
+) {
+    GlassCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = Color.White.copy(alpha = 0.2f),
+        borderColor = Color.White.copy(alpha = 0.4f),
+        cornerRadius = 24.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (profile.brand.isNotEmpty() && profile.name.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        GlassBadge(
+                            text = profile.brand,
+                            backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                            borderColor = SkyBlue.copy(alpha = 0.3f),
+                            textColor = SkyBlue
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = profile.name,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    GlassIconButton(
+                        onClick = onToggleWishlist,
+                        size = 40.dp,
+                        isActive = isInWishlist,
+                        activeColor = LightPeriwinkle
+                    ) {
+                        Icon(
+                            imageVector = if (isInWishlist) {
+                                Icons.Filled.Favorite
+                            } else {
+                                Icons.Outlined.FavoriteBorder
+                            },
+                            contentDescription = null,
+                            tint = LightPeriwinkle,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            GlassDivider()
+
+            Row(
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                GlassIconContainer(
+                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                    borderColor = SkyBlue.copy(alpha = 0.3f),
+                    size = 36.dp
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = SkyBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                Text(
+                    text = profile.analogy,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SkyBlue,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Core Feeling
+            Text(
+                text = profile.coreFeeling,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = LightPeriwinkle
+            )
+
+            // Local Context
+            Text(
+                text = profile.localContext,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+
+            if (profile.topNotes.isNotEmpty()) {
+                GlassDivider()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    profile.topNotes.take(3).forEach { note ->
+                        GlassChip(text = note)
                     }
                 }
             }
@@ -360,7 +425,7 @@ private fun DiscoveryDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onBack) {
+                    GlassIconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
@@ -368,7 +433,11 @@ private fun DiscoveryDetailScreen(
                         )
                     }
 
-                    IconButton(onClick = onToggleWishlist) {
+                    GlassIconButton(
+                        onClick = onToggleWishlist,
+                        isActive = isInWishlist,
+                        activeColor = LightPeriwinkle
+                    ) {
                         Icon(
                             imageVector = if (isInWishlist) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Toggle Wishlist",
@@ -379,14 +448,15 @@ private fun DiscoveryDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Brand and Name
-                Text(
+                // Brand Badge
+                GlassBadge(
                     text = profile.brand,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                    borderColor = SkyBlue.copy(alpha = 0.3f),
+                    textColor = SkyBlue
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = profile.name,
@@ -398,23 +468,32 @@ private fun DiscoveryDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Analogy Card
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = SkyBlue,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        GlassIconContainer(
+                            backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                            borderColor = SkyBlue.copy(alpha = 0.3f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = SkyBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                         Text(
                             text = profile.analogy,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary
+                            color = TextPrimary,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -422,7 +501,11 @@ private fun DiscoveryDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Core Feeling
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Core Feeling",
@@ -442,7 +525,11 @@ private fun DiscoveryDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Local Context
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Best For",
@@ -506,7 +593,11 @@ private fun NotesCard(
     notes: List<String>,
     color: Color
 ) {
-    GlassCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = Color.White.copy(alpha = 0.25f),
+        borderColor = Color.White.copy(alpha = 0.4f)
+    ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -537,25 +628,9 @@ private fun NotesCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 notes.take(3).forEach { note ->
-                    NoteChip(note)
+                    GlassChip(text = note)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun NoteChip(note: String) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.5f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
-    ) {
-        Text(
-            text = note,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = TextPrimary
-        )
     }
 }

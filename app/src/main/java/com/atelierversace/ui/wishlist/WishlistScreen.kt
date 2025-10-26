@@ -46,7 +46,6 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
             )
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Improved Header
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.Transparent

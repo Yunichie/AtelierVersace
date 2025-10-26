@@ -1,21 +1,9 @@
 package com.atelierversace
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,11 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -61,13 +48,37 @@ fun AtelierVersaceApp(
         bottomBar = {
             Box(
                 modifier = Modifier
-                    .padding(bottom = 32.dp, start = 36.dp, end = 36.dp)
-                    .shadow(8.dp, RoundedCornerShape(36.dp))
-                    .clip(RoundedCornerShape(36.dp))
-                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(bottom = 24.dp, start = 32.dp, end = 32.dp)
+                    .shadow(
+                        elevation = 12.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        ambientColor = Color.Black.copy(alpha = 0.1f),
+                        spotColor = Color.Black.copy(alpha = 0.1f)
+                    )
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.25f),
+                                Color.White.copy(alpha = 0.15f)
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.5.dp,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.5f),
+                                Color.White.copy(alpha = 0.2f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(32.dp)
+                    )
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -80,9 +91,11 @@ fun AtelierVersaceApp(
                         Screen.Discovery,
                         Screen.Wishlist
                     ).forEach { screen ->
-                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                        val isSelected = currentDestination?.hierarchy?.any {
+                            it.route == screen.route
+                        } == true
 
-                        IconButton(
+                        Surface(
                             onClick = {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
@@ -92,36 +105,59 @@ fun AtelierVersaceApp(
                                     restoreState = true
                                 }
                             },
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(56.dp),
+                            shape = RoundedCornerShape(18.dp),
+                            color = if (isSelected) {
+                                Color.White.copy(alpha = 0.35f)
+                            } else {
+                                Color.Transparent
+                            },
+                            border = if (isSelected) {
+                                androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    Color.White.copy(alpha = 0.5f)
+                                )
+                            } else null
                         ) {
-                            val iconTint = if(isSelected)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(0.6f)
-                            when(screen) {
-                                is Screen.ScentLens -> Icon(
-                                    painterResource(id = R.drawable.scent_lens_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                val iconTint = if (isSelected) {
+                                    Color(0xFF7D97FE)
+                                } else {
+                                    Color(0xFF8E8E93).copy(0.7f)
+                                }
 
-                                is Screen.Wardrobe -> Icon(
-                                    painterResource(id = R.drawable.wardrobe_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
+                                when (screen) {
+                                    is Screen.ScentLens -> Icon(
+                                        painterResource(id = R.drawable.scent_lens_24),
+                                        contentDescription = "Scent Lens",
+                                        modifier = Modifier.size(28.dp),
+                                        tint = iconTint
+                                    )
 
-                                is Screen.Discovery -> Icon(
-                                    painterResource(id = R.drawable.search_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
+                                    is Screen.Wardrobe -> Icon(
+                                        painterResource(id = R.drawable.wardrobe_24),
+                                        contentDescription = "Wardrobe",
+                                        modifier = Modifier.size(28.dp),
+                                        tint = iconTint
+                                    )
 
-                                is Screen.Wishlist -> Icon(
-                                    painterResource(id = R.drawable.heart_24),
-                                    contentDescription = null,
-                                    Modifier.size(28.dp)
-                                )
+                                    is Screen.Discovery -> Icon(
+                                        painterResource(id = R.drawable.search_24),
+                                        contentDescription = "Discovery",
+                                        modifier = Modifier.size(28.dp),
+                                        tint = iconTint
+                                    )
+
+                                    is Screen.Wishlist -> Icon(
+                                        painterResource(id = R.drawable.heart_24),
+                                        contentDescription = "Wishlist",
+                                        modifier = Modifier.size(28.dp),
+                                        tint = iconTint
+                                    )
+                                }
                             }
                         }
                     }

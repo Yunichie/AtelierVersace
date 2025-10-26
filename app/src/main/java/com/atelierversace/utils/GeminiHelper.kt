@@ -160,6 +160,7 @@ class GeminiHelper {
                 
                 Suggest 3-5 perfumes that match this feeling/description.
                 Include the actual brand name and perfume name for each recommendation.
+                Prioritize trendy perfumes for the query if possible.
                 Consider real perfumes that exist in the market.
                 
                 Respond ONLY with a JSON array WITHOUT codeblock:
