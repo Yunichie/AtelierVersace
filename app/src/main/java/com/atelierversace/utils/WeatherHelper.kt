@@ -37,7 +37,7 @@ interface WeatherApi {
 }
 
 class WeatherHelper {
-    private val apiKey = BuildConfig.OPENWEATHER_KEY // Replace with your API key
+    private val apiKey = BuildConfig.OPENWEATHER_KEY
 
     private val retrofit = Retrofit.Builder()
         .baseUrl("https://api.openweathermap.org/data/2.5/")

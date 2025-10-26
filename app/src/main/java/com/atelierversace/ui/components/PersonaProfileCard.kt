@@ -22,7 +22,6 @@ fun PersonaProfileCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Show brand and name if available
             if (profile.brand.isNotEmpty() && profile.name.isNotEmpty()) {
                 Text(
                     text = "${profile.brand} ${profile.name}",

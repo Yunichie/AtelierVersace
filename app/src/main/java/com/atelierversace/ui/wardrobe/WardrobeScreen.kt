@@ -2,6 +2,7 @@ package com.atelierversace.ui.wardrobe
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -11,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +34,7 @@ import com.atelierversace.ui.theme.*
 fun WardrobeScreen(viewModel: WardrobeViewModel) {
     val wardrobe by viewModel.wardrobe.collectAsState()
     val recommendationState by viewModel.recommendationState.collectAsState()
+    val favorites by viewModel.favorites.collectAsState()
 
     var showOccasionDialog by remember { mutableStateOf(false) }
     var showRecommendationDialog by remember { mutableStateOf(false) }
@@ -40,17 +43,17 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF))))
+            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))))
     ) {
         if (selectedPerfume != null) {
             PerfumeDetailScreen(
                 perfume = selectedPerfume!!,
+                isFavorite = viewModel.isFavorite(selectedPerfume!!.id),
                 onBack = { selectedPerfume = null },
-                onToggleFavorite = { /* TODO */ }
+                onToggleFavorite = { viewModel.toggleFavorite(selectedPerfume!!.id) }
             )
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Improved Header
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = Color.Transparent
@@ -61,7 +64,7 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        Cream.copy(alpha = 0.9f),
+                                        Color.White.copy(alpha = 0.3f),
                                         Color.Transparent
                                     )
                                 )
@@ -88,8 +91,9 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                                 if (wardrobe.isNotEmpty()) {
                                     Surface(
                                         shape = CircleShape,
-                                        color = SkyBlue.copy(alpha = 0.1f),
-                                        modifier = Modifier.size(48.dp)
+                                        color = SkyBlue.copy(alpha = 0.2f),
+                                        border = BorderStroke(1.5.dp, SkyBlue.copy(alpha = 0.3f)),
+                                        modifier = Modifier.size(56.dp)
                                     ) {
                                         Box(
                                             contentAlignment = Alignment.Center,
@@ -97,9 +101,10 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                                         ) {
                                             Text(
                                                 text = "${wardrobe.size}",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = SkyBlue,
-                                                fontWeight = FontWeight.Bold
+                                                style = MaterialTheme.typography.titleLarge.copy(
+                                                    fontWeight = FontWeight.Bold
+                                                ),
+                                                color = SkyBlue
                                             )
                                         }
                                     }
@@ -130,20 +135,43 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(32.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = Color(0xFFE0E0E0)
-                            )
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.radialGradient(
+                                            colors = listOf(
+                                                Color.White.copy(alpha = 0.3f),
+                                                Color.White.copy(alpha = 0.1f)
+                                            )
+                                        )
+                                    )
+                                    .border(2.dp, Color.White.copy(alpha = 0.4f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Favorite,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = TextSecondary.copy(alpha = 0.5f)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(32.dp))
+
                             Text(
                                 text = "Your wardrobe is empty",
-                                style = MaterialTheme.typography.titleLarge,
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 24.sp
+                                ),
                                 color = TextPrimary,
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             Text(
                                 text = "Scan a perfume to get started!",
                                 style = MaterialTheme.typography.bodyLarge,
@@ -160,73 +188,12 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(wardrobe) { perfume ->
-                            GlassCard(
+                            EnhancedPerfumeGridItem(
+                                perfume = perfume,
+                                isFavorite = viewModel.isFavorite(perfume.id),
                                 onClick = { selectedPerfume = perfume },
-                                modifier = Modifier.aspectRatio(0.75f)
-                            ) {
-                                Column(
-                                    modifier = Modifier.fillMaxSize().padding(12.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .fillMaxWidth()
-                                            .background(
-                                                Color.White.copy(alpha = 0.5f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                    ) {
-                                        AsyncImage(
-                                            model = perfume.imageUri,
-                                            contentDescription = perfume.name,
-                                            modifier = Modifier.fillMaxSize().padding(8.dp),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(12.dp))
-
-                                    IconButton(
-                                        onClick = { /* Toggle favorite */ },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Favorite,
-                                            contentDescription = "Favorite",
-                                            tint = Color(0xFFE0E0E0),
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    Text(
-                                        text = perfume.brand,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary
-                                    )
-
-                                    Text(
-                                        text = perfume.name,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        maxLines = 2,
-                                        textAlign = TextAlign.Center,
-                                        color = TextPrimary
-                                    )
-
-                                    Text(
-                                        text = perfume.analogy,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        maxLines = 2,
-                                        textAlign = TextAlign.Center,
-                                        color = TextSecondary,
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    )
-                                }
-                            }
+                                onFavoriteClick = { viewModel.toggleFavorite(perfume.id) }
+                            )
                         }
                     }
                 }
@@ -257,8 +224,148 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
 }
 
 @Composable
+private fun EnhancedPerfumeGridItem(
+    perfume: Perfume,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassCard(
+        onClick = onClick,
+        modifier = modifier.aspectRatio(0.75f),
+        backgroundColor = Color.White.copy(alpha = 0.2f),
+        borderColor = Color.White.copy(alpha = 0.4f),
+        cornerRadius = 20.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.4f),
+                                Color.White.copy(alpha = 0.2f)
+                            )
+                        )
+                    )
+                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+            ) {
+                if (perfume.imageUri.isNotEmpty()) {
+                    AsyncImage(
+                        model = perfume.imageUri,
+                        contentDescription = perfume.name,
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = TextSecondary.copy(alpha = 0.3f)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                onClick = onFavoriteClick,
+                modifier = Modifier.size(32.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = if (isFavorite) {
+                    LightPeriwinkle.copy(alpha = 0.25f)
+                } else {
+                    Color.White.copy(alpha = 0.2f)
+                },
+                border = BorderStroke(
+                    1.dp,
+                    if (isFavorite) {
+                        LightPeriwinkle.copy(alpha = 0.5f)
+                    } else {
+                        Color.White.copy(alpha = 0.3f)
+                    }
+                )
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) {
+                            Icons.Filled.Favorite
+                        } else {
+                            Icons.Outlined.FavoriteBorder
+                        },
+                        contentDescription = "Favorite",
+                        tint = if (isFavorite) {
+                            LightPeriwinkle
+                        } else {
+                            TextSecondary.copy(alpha = 0.6f)
+                        },
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Brand Badge
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = SkyBlue.copy(alpha = 0.15f),
+                border = BorderStroke(0.5.dp, SkyBlue.copy(alpha = 0.3f))
+            ) {
+                Text(
+                    text = perfume.brand,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SkyBlue,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Perfume Name
+            Text(
+                text = perfume.name,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Medium
+                ),
+                maxLines = 2,
+                textAlign = TextAlign.Center,
+                color = TextPrimary
+            )
+
+            // Analogy
+            Text(
+                text = perfume.analogy,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                textAlign = TextAlign.Center,
+                color = TextSecondary,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun PerfumeDetailScreen(
     perfume: Perfume,
+    isFavorite: Boolean,
     onBack: () -> Unit,
     onToggleFavorite: () -> Unit
 ) {
@@ -279,48 +386,108 @@ private fun PerfumeDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextPrimary
-                        )
+                    Surface(
+                        onClick = onBack,
+                        modifier = Modifier.size(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color.White.copy(alpha = 0.25f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = TextPrimary
+                            )
+                        }
                     }
 
-                    IconButton(onClick = onToggleFavorite) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = "Favorite",
-                            tint = Color(0xFFE0E0E0)
+                    Surface(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier.size(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (isFavorite) {
+                            LightPeriwinkle.copy(alpha = 0.25f)
+                        } else {
+                            Color.White.copy(alpha = 0.25f)
+                        },
+                        border = BorderStroke(
+                            1.dp,
+                            if (isFavorite) {
+                                LightPeriwinkle.copy(alpha = 0.5f)
+                            } else {
+                                Color.White.copy(alpha = 0.4f)
+                            }
                         )
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) {
+                                    Icons.Filled.Favorite
+                                } else {
+                                    Icons.Outlined.FavoriteBorder
+                                },
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) LightPeriwinkle else TextSecondary
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                GlassCard(modifier = Modifier.fillMaxWidth().height(250.dp)) {
+                // Image Card
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth().height(250.dp),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Box(
                         modifier = Modifier.fillMaxSize().padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        AsyncImage(
-                            model = perfume.imageUri,
-                            contentDescription = perfume.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
-                        )
+                        if (perfume.imageUri.isNotEmpty()) {
+                            AsyncImage(
+                                model = perfume.imageUri,
+                                contentDescription = perfume.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp),
+                                tint = TextSecondary.copy(alpha = 0.3f)
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = perfume.brand,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
-                )
+                // Brand Badge
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = SkyBlue.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, SkyBlue.copy(alpha = 0.3f))
+                ) {
+                    Text(
+                        text = perfume.brand,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = SkyBlue,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = perfume.name,
@@ -332,20 +499,81 @@ private fun PerfumeDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = SkyBlue,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = SkyBlue.copy(alpha = 0.15f),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = SkyBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
                         Text(
                             text = perfume.analogy,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Core Feeling",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = perfume.coreFeeling,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = LightPeriwinkle,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Best For",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = perfume.localContext,
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextPrimary
                         )
@@ -356,15 +584,12 @@ private fun PerfumeDetailScreen(
 
                 Text(
                     text = "Scent Profile",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                     color = TextPrimary
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Parse and display notes from perfume data
                 val topNotes = perfume.topNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 val middleNotes = perfume.middleNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                 val baseNotes = perfume.baseNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
@@ -411,7 +636,11 @@ private fun NotesCardDetail(
     notes: List<String>,
     color: Color
 ) {
-    GlassCard(modifier = Modifier.fillMaxWidth()) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = Color.White.copy(alpha = 0.25f),
+        borderColor = Color.White.copy(alpha = 0.4f)
+    ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -444,26 +673,21 @@ private fun NotesCardDetail(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 notes.take(3).forEach { note ->
-                    NoteChipDetail(note)
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White.copy(alpha = 0.5f),
+                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
+                    ) {
+                        Text(
+                            text = note,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextPrimary
+                        )
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun NoteChipDetail(note: String) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.5f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f))
-    ) {
-        Text(
-            text = note,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = TextPrimary
-        )
     }
 }
 
@@ -474,45 +698,81 @@ private fun OccasionDialog(
 ) {
     val occasions = listOf("Work", "Casual", "Date Night", "Formal Event")
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "Select Occasion",
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                occasions.forEach { occasion ->
-                    GlassCard(
-                        onClick = { onSelect(occasion) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                            contentAlignment = Alignment.Center
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)),
+        contentAlignment = Alignment.Center
+    ) {
+        GlassCard(
+            modifier = Modifier.padding(32.dp),
+            backgroundColor = Color.White.copy(alpha = 0.95f),
+            borderColor = Color.White.copy(alpha = 0.6f),
+            cornerRadius = 28.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(28.dp).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Select Occasion",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    occasions.forEach { occasion ->
+                        GlassCard(
+                            onClick = { onSelect(occasion) },
+                            modifier = Modifier.fillMaxWidth(),
+                            backgroundColor = Color.White.copy(alpha = 0.3f),
+                            borderColor = Color.White.copy(alpha = 0.5f),
+                            cornerRadius = 16.dp
                         ) {
-                            Text(
-                                occasion,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = TextPrimary
-                            )
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    occasion,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = TextPrimary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                GlassCard(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.1f),
+                    borderColor = TextSecondary.copy(alpha = 0.3f),
+                    borderWidth = 1.5.dp
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Cancel",
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel", color = TextSecondary)
-            }
-        },
-        containerColor = Color.White.copy(alpha = 0.95f),
-        shape = RoundedCornerShape(24.dp)
-    )
+        }
+    }
 }
 
 @Composable
@@ -520,100 +780,291 @@ private fun RecommendationDialog(
     state: RecommendationState,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                when (state) {
-                    is RecommendationState.Loading -> "Finding your perfect scent..."
-                    is RecommendationState.Success -> "Your Aura Today"
-                    is RecommendationState.Error -> "Oops!"
-                    else -> "Recommendation"
-                },
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary
-            )
-        },
-        text = {
-            when (state) {
-                is RecommendationState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                        contentAlignment = Alignment.Center
+    when (state) {
+        is RecommendationState.Success -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                GlassCard(
+                    modifier = Modifier.padding(32.dp),
+                    backgroundColor = Color.White.copy(alpha = 0.95f),
+                    borderColor = Color.White.copy(alpha = 0.6f),
+                    cornerRadius = 28.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(28.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        CircularProgressIndicator(color = SkyBlue)
-                    }
-                }
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            SkyBlue.copy(alpha = 0.3f),
+                                            SkyBlue.copy(alpha = 0.1f)
+                                        )
+                                    )
+                                )
+                                .border(2.dp, SkyBlue.copy(alpha = 0.4f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = SkyBlue
+                            )
+                        }
 
-                is RecommendationState.Success -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        GlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Your Perfect Match",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = TextPrimary,
+                            textAlign = TextAlign.Center
+                        )
+
+                        // Perfume Card
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            backgroundColor = Color.White.copy(alpha = 0.4f),
+                            borderColor = Color.White.copy(alpha = 0.6f),
+                            cornerRadius = 20.dp
+                        ) {
                             Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                AsyncImage(
-                                    model = state.perfume.imageUri,
-                                    contentDescription = state.perfume.name,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp)
-                                        .clip(RoundedCornerShape(16.dp)),
-                                    contentScale = ContentScale.Fit
-                                )
+                                if (state.perfume.imageUri.isNotEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(180.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .background(
+                                                Brush.verticalGradient(
+                                                    colors = listOf(
+                                                        Color.White.copy(alpha = 0.3f)
+                                                    )
+                                                )
+                                            )
+                                            .border(
+                                                1.dp,
+                                                Color.White.copy(alpha = 0.4f),
+                                                RoundedCornerShape(16.dp)
+                                            )
+                                    ) {
+                                        AsyncImage(
+                                            model = state.perfume.imageUri,
+                                            contentDescription = state.perfume.name,
+                                            modifier = Modifier.fillMaxSize().padding(12.dp),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    }
+                                }
 
-                                Text(
-                                    text = state.perfume.brand,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = TextSecondary
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = SkyBlue.copy(alpha = 0.2f),
+                                    border = BorderStroke(1.dp, SkyBlue.copy(alpha = 0.3f))
+                                ) {
+                                    Text(
+                                        text = state.perfume.brand,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = SkyBlue,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
 
                                 Text(
                                     text = state.perfume.name,
                                     style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.SemiBold
+                                        fontWeight = FontWeight.Bold
                                     ),
                                     color = TextPrimary
                                 )
 
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                colors = listOf(
+                                                    Color.Transparent,
+                                                    Color.White.copy(alpha = 0.5f),
+                                                    Color.Transparent
+                                                )
+                                            )
+                                        )
+                                )
+
+                                Row(
+                                    verticalAlignment = Alignment.Top,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = SkyBlue,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = state.reason,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = SkyBlue,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+
+                        GlassCard(
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth(),
+                            backgroundColor = Color.Transparent,
+                            borderColor = Color.White.copy(alpha = 0.4f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(SkyBlue, LightPeriwinkle)
+                                        ),
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .padding(vertical = 14.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Text(
-                                    text = state.reason,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = SkyBlue
+                                    "Perfect!",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }
                     }
                 }
-
-                is RecommendationState.Error -> {
-                    Text(
-                        text = state.message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Taupe,
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                else -> {}
             }
-        },
-        confirmButton = {
-            GlassCard(onClick = onDismiss) {
-                Box(
-                    modifier = Modifier
-                        .background(SkyBlue, shape = RoundedCornerShape(20.dp))
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
+        }
+        is RecommendationState.Loading -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    CircularProgressIndicator(
+                        color = SkyBlue,
+                        modifier = Modifier.size(48.dp),
+                        strokeWidth = 3.dp
+                    )
                     Text(
-                        "Close",
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium
+                        "Finding your perfect scent...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
                     )
                 }
             }
-        },
-        containerColor = Color.White.copy(alpha = 0.95f),
-        shape = RoundedCornerShape(24.dp)
-    )
+        }
+        is RecommendationState.Error -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                GlassCard(
+                    modifier = Modifier.padding(32.dp),
+                    backgroundColor = Color.White.copy(alpha = 0.95f),
+                    borderColor = Color.White.copy(alpha = 0.6f),
+                    cornerRadius = 28.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(28.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            Taupe.copy(alpha = 0.3f),
+                                            Taupe.copy(alpha = 0.1f)
+                                        )
+                                    )
+                                )
+                                .border(1.5.dp, Taupe.copy(alpha = 0.4f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ErrorOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(32.dp),
+                                tint = Taupe
+                            )
+                        }
+
+                        Text(
+                            text = "Oops!",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Taupe
+                        )
+
+                        Text(
+                            text = state.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        GlassCard(
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth(),
+                            backgroundColor = Color.Transparent,
+                            borderColor = Color.White.copy(alpha = 0.4f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        SkyBlue,
+                                        shape = RoundedCornerShape(20.dp)
+                                    )
+                                    .padding(vertical = 14.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Close",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else -> {}
+    }
 }

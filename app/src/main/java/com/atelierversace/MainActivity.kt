@@ -25,13 +25,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Initialize dependencies
         database = AppDatabase.getDatabase(applicationContext)
         perfumeRepository = PerfumeRepository(database.perfumeDao())
         weatherRepository = WeatherRepository(WeatherHelper())
         geminiHelper = GeminiHelper()
 
-        // Create ViewModels
         val scentLensViewModel = ViewModelProvider(
             this,
             object : ViewModelProvider.Factory {

@@ -32,7 +32,6 @@ class WardrobeViewModel(
     private val _recommendationState = MutableStateFlow<RecommendationState>(RecommendationState.Idle)
     val recommendationState: StateFlow<RecommendationState> = _recommendationState
 
-    // Track favorites
     private val _favoriteUpdateTrigger = MutableStateFlow(0)
     private val _favorites = MutableStateFlow<Set<Int>>(emptySet())
 
