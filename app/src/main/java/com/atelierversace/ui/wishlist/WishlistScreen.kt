@@ -1,6 +1,7 @@
 package com.atelierversace.ui.wishlist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -21,7 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.atelierversace.data.model.Perfume
-import com.atelierversace.ui.components.GlassCard
+import com.atelierversace.ui.components.*
 import com.atelierversace.ui.discovery.DiscoveryViewModel
 import com.atelierversace.ui.theme.*
 
@@ -157,7 +159,9 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                         items(wishlist) { perfume ->
                             GlassCard(
                                 onClick = { selectedPerfume = perfume },
-                                modifier = Modifier.aspectRatio(0.75f)
+                                modifier = Modifier.aspectRatio(0.75f),
+                                backgroundColor = Color.White.copy(alpha = 0.2f),
+                                borderColor = Color.White.copy(alpha = 0.4f)
                             ) {
                                 Column(
                                     modifier = Modifier.fillMaxSize().padding(12.dp),
@@ -167,10 +171,16 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                         modifier = Modifier
                                             .weight(1f)
                                             .fillMaxWidth()
+                                            .clip(RoundedCornerShape(14.dp))
                                             .background(
-                                                Color.White.copy(alpha = 0.5f),
-                                                RoundedCornerShape(12.dp)
+                                                Brush.verticalGradient(
+                                                    colors = listOf(
+                                                        Color.White.copy(alpha = 0.4f),
+                                                        Color.White.copy(alpha = 0.2f)
+                                                    )
+                                                )
                                             )
+                                            .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
                                     ) {
                                         Box(
                                             modifier = Modifier.fillMaxSize(),
@@ -180,7 +190,7 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
                                                 imageVector = Icons.Default.Favorite,
                                                 contentDescription = null,
                                                 modifier = Modifier.size(48.dp),
-                                                tint = Color(0xFFE0E0E0)
+                                                tint = TextSecondary.copy(alpha = 0.3f)
                                             )
                                         }
                                     }
@@ -201,11 +211,19 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
 
                                     Spacer(modifier = Modifier.height(8.dp))
 
-                                    Text(
-                                        text = perfume.brand,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary
-                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = SkyBlue.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = perfume.brand,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = SkyBlue,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
 
                                     Text(
                                         text = perfume.name,
@@ -260,7 +278,7 @@ private fun WishlistDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onBack) {
+                    GlassIconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
@@ -268,7 +286,11 @@ private fun WishlistDetailScreen(
                         )
                     }
 
-                    IconButton(onClick = { showDeleteDialog = true }) {
+                    GlassIconButton(
+                        onClick = { showDeleteDialog = true },
+                        activeColor = Taupe,
+                        isActive = true
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Remove",
@@ -279,29 +301,14 @@ private fun WishlistDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                GlassCard(modifier = Modifier.fillMaxWidth().height(250.dp)) {
-                    Box(
-                        modifier = Modifier.fillMaxSize().padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = null,
-                            modifier = Modifier.size(80.dp),
-                            tint = Color(0xFFE0E0E0)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
+                GlassBadge(
                     text = perfume.brand,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondary
+                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                    borderColor = SkyBlue.copy(alpha = 0.3f),
+                    textColor = SkyBlue
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = perfume.name,
@@ -313,29 +320,43 @@ private fun WishlistDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.Top
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = SkyBlue,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
+                        GlassIconContainer(
+                            backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                            borderColor = SkyBlue.copy(alpha = 0.3f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = SkyBlue,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                         Text(
                             text = perfume.analogy,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary
+                            color = TextPrimary,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Core Feeling",
@@ -354,7 +375,11 @@ private fun WishlistDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = Color.White.copy(alpha = 0.25f),
+                    borderColor = Color.White.copy(alpha = 0.4f)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Best For",
@@ -368,6 +393,49 @@ private fun WishlistDetailScreen(
                             color = TextPrimary
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Scent Profile",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = TextPrimary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val topNotes = perfume.topNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                val middleNotes = perfume.middleNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                val baseNotes = perfume.baseNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+                if (topNotes.isNotEmpty()) {
+                    NotesCard(
+                        title = "Top Notes",
+                        description = "First impression, lasts 15-30 minutes",
+                        notes = topNotes,
+                        color = SkyBlue
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                if (middleNotes.isNotEmpty()) {
+                    NotesCard(
+                        title = "Middle Notes",
+                        description = "Heart of the fragrance, lasts 3-5 hours",
+                        notes = middleNotes,
+                        color = LightPeriwinkle
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                if (baseNotes.isNotEmpty()) {
+                    NotesCard(
+                        title = "Base Notes",
+                        description = "Long-lasting foundation, lasts 5-10+ hours",
+                        notes = baseNotes,
+                        color = Taupe
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(80.dp))
@@ -424,5 +492,56 @@ private fun WishlistDetailScreen(
             containerColor = Color.White.copy(alpha = 0.95f),
             shape = RoundedCornerShape(24.dp)
         )
+    }
+}
+
+@Composable
+private fun NotesCard(
+    title: String,
+    description: String,
+    notes: List<String>,
+    color: Color
+) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = Color.White.copy(alpha = 0.25f),
+        borderColor = Color.White.copy(alpha = 0.4f)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .background(color, shape = CircleShape)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = TextPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                notes.take(3).forEach { note ->
+                    GlassChip(text = note)
+                }
+            }
+        }
     }
 }

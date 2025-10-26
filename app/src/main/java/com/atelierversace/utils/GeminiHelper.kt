@@ -59,6 +59,8 @@ class GeminiHelper {
                 
                 Consider the context: Surabaya, Indonesia (tropical, humid climate).
                 
+                Use Google Search to find actual informations about the perfume.
+                
                 Respond ONLY with a JSON object in this exact format WITHOUT codeblock:
                 {
                     "brand": "Brand Name",
@@ -210,8 +212,9 @@ class GeminiHelper {
             val prompt = """
                 Based on this query: "$query"
                 
+                Use Google Search to find perfumes that match this query.
                 Suggest 3-5 perfumes that match this feeling/description.
-                Include the actual brand name and perfume name for each recommendation.
+                Include the actual brand name, perfume name, top notes, middle notes, and base notes for each recommendation.
                 Prioritize trendy perfumes for the query if possible.
                 Consider real perfumes that exist in the market.
                 

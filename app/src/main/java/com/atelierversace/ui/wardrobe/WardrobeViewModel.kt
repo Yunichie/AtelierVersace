@@ -9,7 +9,6 @@ import com.atelierversace.utils.GeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -29,30 +28,48 @@ class WardrobeViewModel(
     val wardrobe = perfumeRepository.getWardrobe()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val wishlist = perfumeRepository.getWishlist()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     private val _recommendationState = MutableStateFlow<RecommendationState>(RecommendationState.Idle)
     val recommendationState: StateFlow<RecommendationState> = _recommendationState
 
-    private val _favoriteUpdateTrigger = MutableStateFlow(0)
     private val _favorites = MutableStateFlow<Set<Int>>(emptySet())
+    val favorites: StateFlow<Set<Int>> = _favorites
 
-    val favorites: StateFlow<Set<Int>> = combine(
-        wardrobe,
-        _favoriteUpdateTrigger
-    ) { perfumes, _ ->
-        _favorites.value
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    init {
+        viewModelScope.launch {
+            wishlist.collect { wishlistPerfumes ->
+                _favorites.value = wishlistPerfumes.map { it.id }.toSet()
+            }
+        }
+    }
 
     fun isFavorite(perfumeId: Int): Boolean {
         return _favorites.value.contains(perfumeId)
     }
 
     fun toggleFavorite(perfumeId: Int) {
-        _favorites.value = if (_favorites.value.contains(perfumeId)) {
-            _favorites.value - perfumeId
-        } else {
-            _favorites.value + perfumeId
+        viewModelScope.launch {
+            val perfume = wardrobe.value.find { it.id == perfumeId } ?: return@launch
+
+            val existingInWishlist = wishlist.value.find {
+                it.brand == perfume.brand && it.name == perfume.name
+            }
+
+            if (existingInWishlist != null) {
+                perfumeRepository.deletePerfume(existingInWishlist)
+                _favorites.value = _favorites.value - perfumeId
+            } else {
+                val wishlistPerfume = perfume.copy(
+                    id = 0,
+                    isWishlist = true,
+                    timestamp = System.currentTimeMillis()
+                )
+                perfumeRepository.addPerfume(wishlistPerfume)
+                _favorites.value = _favorites.value + perfumeId
+            }
         }
-        _favoriteUpdateTrigger.value++
     }
 
     fun getRecommendation(userQuery: String) {
