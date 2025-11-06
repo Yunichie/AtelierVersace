@@ -1,14 +1,18 @@
 package com.atelierversace.ui.scent_lens
 
-import android.graphics.BitmapFactory
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,13 +22,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import coil.compose.AsyncImage
+import com.atelierversace.data.model.PersonaProfile
 import com.atelierversace.ui.components.*
 import com.atelierversace.ui.theme.*
+import java.io.ByteArrayOutputStream
+import java.io.File
 
 @Composable
 fun ScentLensScreen(
@@ -34,19 +46,62 @@ fun ScentLensScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val userId = remember {
+        com.atelierversace.data.repository.AuthRepository().getCurrentUser()?.id ?: ""
+    }
+
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+        if (isGranted) {
+            showImageSourceDialog = true
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            capturedBitmap = it
+            imageUri = null
+
+            val stream = ByteArrayOutputStream()
+            it.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+            val imageBytes = stream.toByteArray()
+
+            viewModel.analyzePerfume(imageBytes, "captured_image")
+        }
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            selectedImageUri = it
-            try {
-                val inputStream = context.contentResolver.openInputStream(it)
-                val bitmap = BitmapFactory.decodeStream(inputStream)
-                viewModel.analyzePerfume(bitmap, it.toString())
-            } catch (e: Exception) {
-                e.printStackTrace()
+            imageUri = it
+            capturedBitmap = null
+
+            val bitmap = android.graphics.BitmapFactory.decodeStream(
+                context.contentResolver.openInputStream(it)
+            )
+            bitmap?.let { bmp ->
+                val stream = ByteArrayOutputStream()
+                bmp.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                val imageBytes = stream.toByteArray()
+
+                viewModel.analyzePerfume(imageBytes, it.toString())
             }
         }
     }
@@ -54,379 +109,509 @@ fun ScentLensScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
+                )
+            )
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            when (val currentState = state) {
-                is ScentLensState.Idle -> {
-                    Box(
-                        modifier = Modifier
-                            .size(280.dp)
-                            .clip(RoundedCornerShape(28.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.3f),
-                                        Color.White.copy(alpha = 0.15f)
-                                    )
-                                )
-                            )
-                            .border(
-                                width = 2.dp,
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.6f),
-                                        Color.White.copy(alpha = 0.3f)
-                                    )
-                                ),
-                                shape = RoundedCornerShape(28.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.radialGradient(
-                                            colors = listOf(
-                                                Color.White.copy(alpha = 0.4f),
-                                                Color.White.copy(alpha = 0.2f)
-                                            )
-                                        )
-                                    )
-                                    .border(1.5.dp, Color.White.copy(alpha = 0.5f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CameraAlt,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(40.dp),
-                                    tint = SkyBlue
-                                )
-                            }
+            Spacer(modifier = Modifier.height(48.dp))
 
-                            Text(
-                                text = "Position bottle in frame",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+            Text(
+                text = "Scent Lens",
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 40.sp
+                ),
+                color = TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Scan your perfume bottle to discover its personality",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            AnimatedContent(
+                targetState = state,
+                transitionSpec = {
+                    fadeIn() + slideInVertically() togetherWith fadeOut() + slideOutVertically()
+                },
+                label = "scent_lens_state"
+            ) { currentState ->
+                when (currentState) {
+                    is ScentLensState.Idle -> {
+                        IdleContent(
+                            onCaptureClick = {
+                                if (hasCameraPermission) {
+                                    showImageSourceDialog = true
+                                } else {
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }
+                            }
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    is ScentLensState.Loading -> {
+                        LoadingContent(
+                            imageUri = imageUri,
+                            capturedBitmap = capturedBitmap
+                        )
+                    }
+
+                    is ScentLensState.Success -> {
+                        SuccessContent(
+                            brand = currentState.brand,
+                            name = currentState.name,
+                            profile = currentState.profile,
+                            imageUri = imageUri,
+                            capturedBitmap = capturedBitmap,
+                            onAddToWardrobe = {
+                                viewModel.addToWardrobe(
+                                    brand = currentState.brand,
+                                    name = currentState.name,
+                                    profile = currentState.profile,
+                                    imageUri = currentState.imageUri,
+                                    userId = userId,
+                                    onComplete = onNavigateToWardrobe
+                                )
+                            },
+                            onScanAnother = {
+                                viewModel.reset()
+                                imageUri = null
+                                capturedBitmap = null
+                            }
+                        )
+                    }
+
+                    is ScentLensState.Error -> {
+                        ErrorContent(
+                            message = currentState.message,
+                            onRetry = {
+                                viewModel.reset()
+                                imageUri = null
+                                capturedBitmap = null
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(100.dp))
+        }
+    }
+
+    if (showImageSourceDialog) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f)),
+            contentAlignment = Alignment.Center
+        ) {
+            GlassCard(
+                modifier = Modifier.padding(32.dp),
+                backgroundColor = Color.White.copy(alpha = 0.95f),
+                borderColor = Color.White.copy(alpha = 0.6f),
+                cornerRadius = 24.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        "Choose Image Source",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
 
                     GlassButton(
-                        onClick = { galleryLauncher.launch("image/*") },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp)
+                        onClick = {
+                            showImageSourceDialog = false
+                            cameraLauncher.launch(null)
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(
                             imageVector = Icons.Default.CameraAlt,
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            "Scan Fragrance",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 17.sp
-                        )
-                    }
-                }
-
-                is ScentLensState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.3f),
-                                        Color.White.copy(alpha = 0.1f)
-                                    )
-                                )
-                            )
-                            .border(2.dp, Color.White.copy(alpha = 0.4f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = SkyBlue,
-                            modifier = Modifier.size(48.dp),
-                            strokeWidth = 3.dp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Text(
-                        "Analyzing fragrance...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = TextSecondary,
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    OutlinedGlassButton(
-                        onClick = { viewModel.reset() },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                        borderColor = TextSecondary.copy(alpha = 0.3f)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                            tint = TextSecondary,
-                            modifier = Modifier.size(20.dp)
+                            tint = Color.White
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Cancel",
-                            color = TextSecondary,
-                            fontWeight = FontWeight.Medium
+                        Text("Take Photo", color = Color.White)
+                    }
+
+                    OutlinedGlassButton(
+                        onClick = {
+                            showImageSourceDialog = false
+                            galleryLauncher.launch("image/*")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            tint = SkyBlue
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Choose from Gallery", color = SkyBlue)
+                    }
+
+                    TextButton(
+                        onClick = { showImageSourceDialog = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IdleContent(onCaptureClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        GlassCard(
+            modifier = Modifier
+                .size(280.dp)
+                .padding(16.dp),
+            backgroundColor = Color.White.copy(alpha = 0.2f),
+            borderColor = Color.White.copy(alpha = 0.4f),
+            cornerRadius = 140.dp
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CameraAlt,
+                    contentDescription = null,
+                    modifier = Modifier.size(100.dp),
+                    tint = SkyBlue.copy(alpha = 0.5f)
+                )
+            }
+        }
+
+        GlassButton(
+            onClick = onCaptureClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                "Scan Perfume",
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingContent(
+    imageUri: Uri?,
+    capturedBitmap: Bitmap?
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        GlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(400.dp),
+            backgroundColor = Color.White.copy(alpha = 0.25f),
+            borderColor = Color.White.copy(alpha = 0.4f)
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when {
+                    capturedBitmap != null -> {
+                        Image(
+                            bitmap = capturedBitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    imageUri != null -> {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     }
                 }
 
-                is ScentLensState.Success -> {
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        backgroundColor = Color.White.copy(alpha = 0.25f),
-                        borderColor = Color.White.copy(alpha = 0.5f),
-                        cornerRadius = 28.dp
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(28.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.radialGradient(
-                                            colors = listOf(
-                                                SkyBlue.copy(alpha = 0.3f),
-                                                SkyBlue.copy(alpha = 0.1f)
-                                            )
-                                        )
-                                    )
-                                    .border(1.5.dp, SkyBlue.copy(alpha = 0.4f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp),
-                                    tint = SkyBlue
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            GlassBadge(
-                                text = currentState.brand,
-                                backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                                borderColor = SkyBlue.copy(alpha = 0.3f),
-                                textColor = SkyBlue
-                            )
-
-                            Text(
-                                text = currentState.name,
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = TextPrimary,
-                                textAlign = TextAlign.Center
-                            )
-
-                            GlassDivider()
-
-                            Row(
-                                verticalAlignment = Alignment.Top,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                GlassIconContainer(
-                                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                                    borderColor = SkyBlue.copy(alpha = 0.3f),
-                                    size = 36.dp
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = null,
-                                        tint = SkyBlue,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-
-                                Text(
-                                    text = currentState.profile.analogy,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = SkyBlue,
-                                    textAlign = TextAlign.Start,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-
-                            // Core Feeling
-                            Text(
-                                text = currentState.profile.coreFeeling,
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = LightPeriwinkle,
-                                textAlign = TextAlign.Center
-                            )
-
-                            // Local Context
-                            Text(
-                                text = currentState.profile.localContext,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            GlassButton(
-                                onClick = {
-                                    viewModel.addToWardrobe(
-                                        currentState.brand,
-                                        currentState.name,
-                                        currentState.profile,
-                                        currentState.imageUri
-                                    ) {
-                                        onNavigateToWardrobe()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    "Add to Wardrobe",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 16.sp
-                                )
-                            }
-
-                            OutlinedGlassButton(
-                                onClick = { viewModel.reset() },
-                                modifier = Modifier.fillMaxWidth(),
-                                borderColor = TextSecondary.copy(alpha = 0.3f)
-                            ) {
-                                Text(
-                                    "Cancel",
-                                    color = TextSecondary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(48.dp)
+                    )
                 }
+            }
+        }
 
-                is ScentLensState.Error -> {
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                        backgroundColor = Color.White.copy(alpha = 0.25f),
-                        borderColor = Color.White.copy(alpha = 0.5f),
-                        cornerRadius = 24.dp
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.radialGradient(
-                                            colors = listOf(
-                                                Taupe.copy(alpha = 0.3f),
-                                                Taupe.copy(alpha = 0.1f)
-                                            )
-                                        )
-                                    )
-                                    .border(1.5.dp, Taupe.copy(alpha = 0.4f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ErrorOutline,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp),
-                                    tint = Taupe
-                                )
-                            }
+        Text(
+            text = "Analyzing your perfume...",
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimary,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
 
-                            Text(
-                                text = "Unable to identify",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = Taupe
-                            )
-
-                            Text(
-                                text = currentState.message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            GlassButton(
-                                onClick = { galleryLauncher.launch("image/*") },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "Try Again",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-
-                            OutlinedGlassButton(
-                                onClick = { viewModel.reset() },
-                                modifier = Modifier.fillMaxWidth(),
-                                borderColor = TextSecondary.copy(alpha = 0.3f)
-                            ) {
-                                Text(
-                                    "Cancel",
-                                    color = TextSecondary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
+@Composable
+private fun SuccessContent(
+    brand: String,
+    name: String,
+    profile: PersonaProfile,
+    imageUri: Uri?,
+    capturedBitmap: Bitmap?,
+    onAddToWardrobe: () -> Unit,
+    onScanAnother: () -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        GlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp),
+            backgroundColor = Color.White.copy(alpha = 0.25f),
+            borderColor = Color.White.copy(alpha = 0.4f)
+        ) {
+            when {
+                capturedBitmap != null -> {
+                    Image(
+                        bitmap = capturedBitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
                 }
+                imageUri != null -> {
+                    AsyncImage(
+                        model = imageUri,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
+        }
+
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            backgroundColor = Color.White.copy(alpha = 0.25f),
+            borderColor = Color.White.copy(alpha = 0.4f)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = brand,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SkyBlue,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary
+                )
+            }
+        }
+
+        PersonaProfileCard(profile = profile)
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedGlassButton(
+                onClick = onScanAnother,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = TextSecondary
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Scan Another", color = TextSecondary, fontSize = 14.sp)
+            }
+
+            GlassButton(
+                onClick = onAddToWardrobe,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = Color.White
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Add to Wardrobe", color = Color.White, fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorContent(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier.padding(32.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Error,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = Taupe.copy(alpha = 0.5f)
+        )
+
+        Text(
+            text = "Oops!",
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = TextPrimary
+        )
+
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = TextSecondary,
+            textAlign = TextAlign.Center
+        )
+
+        GlassButton(
+            onClick = onRetry,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                tint = Color.White
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Try Again", color = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun PersonaProfileCard(profile: PersonaProfile) {
+    GlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = Color.White.copy(alpha = 0.25f),
+        borderColor = Color.White.copy(alpha = 0.4f)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Analogy",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Text(
+                    profile.analogy,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextPrimary
+                )
+            }
+
+            GlassDivider()
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Core Feeling",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Text(
+                    profile.coreFeeling,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextPrimary
+                )
+            }
+
+            GlassDivider()
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                NotesSection("Top Notes", profile.topNotes, SkyBlue)
+                NotesSection("Middle Notes", profile.middleNotes, LightPeriwinkle)
+                NotesSection("Base Notes", profile.baseNotes, Taupe)
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotesSection(label: String, notes: List<String>, color: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            notes.take(3).forEach { note ->
+                GlassBadge(
+                    text = note,
+                    backgroundColor = color.copy(alpha = 0.15f),
+                    borderColor = color.copy(alpha = 0.3f),
+                    textColor = color
+                )
             }
         }
     }

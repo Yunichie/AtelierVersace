@@ -1,13 +1,13 @@
 package com.atelierversace.utils
 
-import android.graphics.Bitmap
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.content
+import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
+import dev.shreyaspatil.ai.client.generativeai.type.content
 import com.atelierversace.data.model.PersonaProfile
 import com.atelierversace.data.model.Perfume
 import org.json.JSONObject
 import org.json.JSONArray
 import com.atelierversace.BuildConfig
+import dev.shreyaspatil.ai.client.generativeai.type.PlatformImage
 
 class GeminiHelper {
 
@@ -21,7 +21,7 @@ class GeminiHelper {
         apiKey = BuildConfig.GEMINI_KEY
     )
 
-    suspend fun identifyPerfume(bitmap: Bitmap): Pair<String, String>? {
+    suspend fun identifyPerfume(imageBytes: ByteArray): Pair<String, String>? {
         try {
             val prompt = """
                 Identify this perfume from the image. Look at the bottle, label, and any text visible.
@@ -34,7 +34,7 @@ class GeminiHelper {
 
             val response = visionModel.generateContent(
                 content {
-                    image(bitmap)
+                    PlatformImage(imageBytes)
                     text(prompt)
                 }
             )

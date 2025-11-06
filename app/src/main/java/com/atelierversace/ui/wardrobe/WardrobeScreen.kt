@@ -1,10 +1,9 @@
 package com.atelierversace.ui.wardrobe
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -12,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,13 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.atelierversace.data.model.Perfume
+import com.atelierversace.data.remote.PerfumeCloud
 import com.atelierversace.ui.components.*
 import com.atelierversace.ui.theme.*
 
@@ -36,222 +33,445 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
     val recommendationState by viewModel.recommendationState.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
 
-    var showRecommendationInput by remember { mutableStateOf(false) }
-    var selectedPerfume by remember { mutableStateOf<Perfume?>(null) }
+    var selectedPerfume by remember { mutableStateOf<PerfumeCloud?>(null) }
+    var showRecommendationDialog by remember { mutableStateOf(false) }
+    var userQuery by remember { mutableStateOf("") }
+
+    val userId = remember {
+        com.atelierversace.data.repository.AuthRepository().getCurrentUser()?.id ?: ""
+    }
+
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            viewModel.initialize(userId)
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))))
-    ) {
-        if (selectedPerfume != null) {
-            PerfumeDetailScreen(
-                perfume = selectedPerfume!!,
-                isFavorite = viewModel.isFavorite(selectedPerfume!!.id),
-                onBack = { selectedPerfume = null },
-                onToggleFavorite = { viewModel.toggleFavorite(selectedPerfume!!.id) }
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
+                )
             )
-        } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.Transparent
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.Transparent
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.3f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                        .padding(horizontal = 24.dp, vertical = 20.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.White.copy(alpha = 0.3f),
-                                        Color.Transparent
-                                    )
-                                )
-                            )
-                            .padding(horizontal = 24.dp, vertical = 20.dp)
-                    ) {
-                        Column {
-                            Spacer(modifier = Modifier.height(16.dp))
+                    Column {
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Wardrobe",
-                                    style = MaterialTheme.typography.displaySmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 40.sp
-                                    ),
-                                    color = TextPrimary
-                                )
-
-                                if (wardrobe.isNotEmpty()) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = SkyBlue.copy(alpha = 0.2f),
-                                        border = BorderStroke(1.5.dp, SkyBlue.copy(alpha = 0.3f)),
-                                        modifier = Modifier.size(56.dp)
-                                    ) {
-                                        Box(
-                                            contentAlignment = Alignment.Center,
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            Text(
-                                                text = "${wardrobe.size}",
-                                                style = MaterialTheme.typography.titleLarge.copy(
-                                                    fontWeight = FontWeight.Bold
-                                                ),
-                                                color = SkyBlue
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = if (wardrobe.isEmpty())
-                                    "Start building your collection"
-                                else
-                                    "Your personal fragrance collection",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary
-                            )
-
-                            if (wardrobe.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                GlassButton(
-                                    onClick = { showRecommendationInput = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        "Get AI Recommendation",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 15.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Perfume Grid
-                if (wardrobe.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(120.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.radialGradient(
-                                            colors = listOf(
-                                                Color.White.copy(alpha = 0.3f),
-                                                Color.White.copy(alpha = 0.1f)
-                                            )
-                                        )
-                                    )
-                                    .border(2.dp, Color.White.copy(alpha = 0.4f), CircleShape),
-                                contentAlignment = Alignment.Center
+                            Text(
+                                text = "Wardrobe",
+                                style = MaterialTheme.typography.displaySmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 40.sp
+                                ),
+                                color = TextPrimary
+                            )
+
+                            IconButton(
+                                onClick = { showRecommendationDialog = true }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Favorite,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = TextSecondary.copy(alpha = 0.5f)
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = "Get Recommendation",
+                                    tint = SkyBlue,
+                                    modifier = Modifier.size(28.dp)
                                 )
                             }
-
-                            Spacer(modifier = Modifier.height(32.dp))
-
-                            Text(
-                                text = "Your wardrobe is empty",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 24.sp
-                                ),
-                                color = TextPrimary,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Text(
-                                text = "Scan a perfume to get started!",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = TextSecondary,
-                                textAlign = TextAlign.Center
-                            )
                         }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "${wardrobe.size} fragrances in your collection",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
                     }
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(wardrobe) { perfume ->
-                            EnhancedPerfumeGridItem(
-                                perfume = perfume,
-                                isFavorite = viewModel.isFavorite(perfume.id),
-                                onClick = { selectedPerfume = perfume },
-                                onFavoriteClick = { viewModel.toggleFavorite(perfume.id) }
-                            )
-                        }
+                }
+            }
+
+            if (wardrobe.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EmptyWardrobeContent()
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(wardrobe) { perfume ->
+                        PerfumeCard(
+                            perfume = perfume,
+                            isFavorite = viewModel.isFavorite(perfume.id ?: ""),
+                            onToggleFavorite = {
+                                viewModel.toggleFavorite(perfume.id ?: "")
+                            },
+                            onClick = { selectedPerfume = perfume }
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }
         }
     }
 
-    if (showRecommendationInput) {
-        RecommendationInputDialog(
-            onDismiss = { showRecommendationInput = false },
-            onSubmit = { query ->
-                showRecommendationInput = false
-                viewModel.getRecommendation(query)
+    selectedPerfume?.let { perfume ->
+        PerfumeDetailDialog(
+            perfume = perfume,
+            isFavorite = viewModel.isFavorite(perfume.id ?: ""),
+            onToggleFavorite = {
+                viewModel.toggleFavorite(perfume.id ?: "")
+            },
+            onDismiss = { selectedPerfume = null }
+        )
+    }
+
+    if (showRecommendationDialog) {
+        RecommendationDialog(
+            query = userQuery,
+            onQueryChange = { userQuery = it },
+            onGetRecommendation = {
+                viewModel.getRecommendation(userQuery)
+            },
+            onDismiss = {
+                showRecommendationDialog = false
+                userQuery = ""
             }
         )
     }
 
-    if (recommendationState is RecommendationState.Loading ||
-        recommendationState is RecommendationState.Success ||
-        recommendationState is RecommendationState.Error) {
-        RecommendationDialog(
-            state = recommendationState,
-            onDismiss = {
-                viewModel.resetRecommendation()
-            }
+    when (val state = recommendationState) {
+        is RecommendationState.Success -> {
+            RecommendationResultDialog(
+                perfume = state.perfume,
+                reason = state.reason,
+                onDismiss = {
+                    viewModel.resetRecommendation()
+                }
+            )
+        }
+        is RecommendationState.Error -> {
+            ErrorDialog(
+                message = state.message,
+                onDismiss = {
+                    viewModel.resetRecommendation()
+                }
+            )
+        }
+        else -> {}
+    }
+}
+
+@Composable
+private fun EmptyWardrobeContent() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.padding(48.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.ShoppingBag,
+            contentDescription = null,
+            modifier = Modifier.size(80.dp),
+            tint = TextSecondary.copy(alpha = 0.5f)
+        )
+
+        Text(
+            text = "Your wardrobe is empty",
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold
+            ),
+            color = TextPrimary,
+            textAlign = TextAlign.Center
+        )
+
+        Text(
+            text = "Use Scent Lens to scan and add your first perfume",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondary,
+            textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
-private fun RecommendationInputDialog(
-    onDismiss: () -> Unit,
-    onSubmit: (String) -> Unit
+private fun PerfumeCard(
+    perfume: PerfumeCloud,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    onClick: () -> Unit
 ) {
-    var query by remember { mutableStateOf("") }
+    GlassCard(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(0.75f),
+        backgroundColor = Color.White.copy(alpha = 0.25f),
+        borderColor = Color.White.copy(alpha = 0.4f)
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                if (perfume.imageUri.isNotEmpty()) {
+                    AsyncImage(
+                        model = perfume.imageUri,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        SkyBlue.copy(alpha = 0.2f),
+                                        LightPeriwinkle.copy(alpha = 0.2f)
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Spa,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = SkyBlue.copy(alpha = 0.4f)
+                        )
+                    }
+                }
 
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Surface(
+                        onClick = onToggleFavorite,
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (isFavorite) Taupe else TextSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = perfume.brand,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = SkyBlue,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = perfume.name,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = TextPrimary,
+                    maxLines = 2
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PerfumeDetailDialog(
+    perfume: PerfumeCloud,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)),
+        contentAlignment = Alignment.Center
+    ) {
+        GlassCard(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            backgroundColor = Color.White.copy(alpha = 0.95f),
+            borderColor = Color.White.copy(alpha = 0.6f),
+            cornerRadius = 24.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            perfume.brand,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = SkyBlue,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            perfume.name,
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = TextPrimary
+                        )
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        IconButton(
+                            onClick = onToggleFavorite,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (isFavorite) Taupe else TextSecondary
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                tint = TextSecondary
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+                GlassDivider()
+                Spacer(modifier = Modifier.height(20.dp))
+
+                DetailSection("Analogy", perfume.analogy)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                DetailSection("Core Feeling", perfume.coreFeeling)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                DetailSection("Local Context", perfume.localContext)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, SkyBlue)
+                    NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, LightPeriwinkle)
+                    NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Taupe)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailSection(label: String, content: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Text(
+            content,
+            style = MaterialTheme.typography.bodyLarge,
+            color = TextPrimary
+        )
+    }
+}
+
+@Composable
+private fun NotesRow(label: String, notes: List<String>, color: Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            notes.take(3).filter { it.isNotBlank() }.forEach { note ->
+                GlassBadge(
+                    text = note,
+                    backgroundColor = color.copy(alpha = 0.15f),
+                    borderColor = color.copy(alpha = 0.3f),
+                    textColor = color
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecommendationDialog(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onGetRecommendation: () -> Unit,
+    onDismiss: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -262,40 +482,22 @@ private fun RecommendationInputDialog(
             modifier = Modifier.padding(32.dp),
             backgroundColor = Color.White.copy(alpha = 0.95f),
             borderColor = Color.White.copy(alpha = 0.6f),
-            cornerRadius = 28.dp
+            cornerRadius = 24.dp
         ) {
             Column(
-                modifier = Modifier.padding(28.dp).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    GlassIconContainer(
-                        backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                        borderColor = SkyBlue.copy(alpha = 0.3f),
-                        size = 48.dp
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = SkyBlue,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Text(
-                        text = "AI Recommendation",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = TextPrimary
-                    )
-                }
+                Text(
+                    "Get AI Recommendation",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary
+                )
 
                 Text(
-                    text = "Describe your mood, occasion, or what you're looking for",
+                    "Describe the occasion or your mood",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -307,13 +509,12 @@ private fun RecommendationInputDialog(
                 ) {
                     TextField(
                         value = query,
-                        onValueChange = { query = it },
+                        onValueChange = onQueryChange,
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
                             Text(
-                                "e.g., something fresh for work, romantic evening scent...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary.copy(alpha = 0.6f)
+                                "e.g., casual day out, romantic dinner...",
+                                color = TextSecondary.copy(alpha = 0.7f)
                             )
                         },
                         colors = TextFieldDefaults.colors(
@@ -323,8 +524,7 @@ private fun RecommendationInputDialog(
                             unfocusedIndicatorColor = Color.Transparent,
                             cursorColor = SkyBlue
                         ),
-                        minLines = 3,
-                        maxLines = 5
+                        minLines = 2
                     )
                 }
 
@@ -334,20 +534,16 @@ private fun RecommendationInputDialog(
                 ) {
                     OutlinedGlassButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        borderColor = TextSecondary.copy(alpha = 0.3f)
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text(
-                            "Cancel",
-                            color = TextSecondary,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text("Cancel", color = TextSecondary)
                     }
 
                     GlassButton(
                         onClick = {
                             if (query.isNotBlank()) {
-                                onSubmit(query)
+                                onGetRecommendation()
+                                onDismiss()
                             }
                         },
                         modifier = Modifier.weight(1f)
@@ -359,12 +555,7 @@ private fun RecommendationInputDialog(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            "Recommend",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 11.sp
-                        )
+                        Text("Get Recommendation", color = Color.White, fontSize = 13.sp)
                     }
                 }
             }
@@ -373,224 +564,45 @@ private fun RecommendationInputDialog(
 }
 
 @Composable
-private fun EnhancedPerfumeGridItem(
-    perfume: Perfume,
-    isFavorite: Boolean,
-    onClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    GlassCard(
-        onClick = onClick,
-        modifier = modifier.aspectRatio(0.75f),
-        backgroundColor = Color.White.copy(alpha = 0.2f),
-        borderColor = Color.White.copy(alpha = 0.4f),
-        cornerRadius = 20.dp
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.4f),
-                                Color.White.copy(alpha = 0.2f)
-                            )
-                        )
-                    )
-                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
-            ) {
-                if (perfume.imageUri.isNotEmpty()) {
-                    AsyncImage(
-                        model = perfume.imageUri,
-                        contentDescription = perfume.name,
-                        modifier = Modifier.fillMaxSize().padding(8.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = TextSecondary.copy(alpha = 0.3f)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Surface(
-                onClick = onFavoriteClick,
-                modifier = Modifier.size(32.dp),
-                shape = RoundedCornerShape(10.dp),
-                color = if (isFavorite) {
-                    LightPeriwinkle.copy(alpha = 0.25f)
-                } else {
-                    Color.White.copy(alpha = 0.2f)
-                },
-                border = BorderStroke(
-                    1.dp,
-                    if (isFavorite) {
-                        LightPeriwinkle.copy(alpha = 0.5f)
-                    } else {
-                        Color.White.copy(alpha = 0.3f)
-                    }
-                )
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) {
-                            Icons.Filled.Favorite
-                        } else {
-                            Icons.Outlined.FavoriteBorder
-                        },
-                        contentDescription = "Favorite",
-                        tint = if (isFavorite) {
-                            LightPeriwinkle
-                        } else {
-                            TextSecondary.copy(alpha = 0.6f)
-                        },
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = SkyBlue.copy(alpha = 0.15f),
-                border = BorderStroke(0.5.dp, SkyBlue.copy(alpha = 0.3f))
-            ) {
-                Text(
-                    text = perfume.brand,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SkyBlue,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = perfume.name,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                maxLines = 2,
-                textAlign = TextAlign.Center,
-                color = TextPrimary
-            )
-
-            Text(
-                text = perfume.analogy,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                textAlign = TextAlign.Center,
-                color = TextSecondary,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun PerfumeDetailScreen(
-    perfume: Perfume,
-    isFavorite: Boolean,
-    onBack: () -> Unit,
-    onToggleFavorite: () -> Unit
+private fun RecommendationResultDialog(
+    perfume: PerfumeCloud,
+    reason: String,
+    onDismiss: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(colors = listOf(Cream, Color(0xFFF8F7FF))))
+            .background(Color.Black.copy(alpha = 0.4f)),
+        contentAlignment = Alignment.Center
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp)
+        GlassCard(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            backgroundColor = Color.White.copy(alpha = 0.95f),
+            borderColor = Color.White.copy(alpha = 0.6f),
+            cornerRadius = 24.dp
         ) {
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    GlassIconButton(
-                        onClick = onBack,
-                        size = 48.dp
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextPrimary
-                        )
-                    }
+                    Text(
+                        "AI Recommendation",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
 
-                    GlassIconButton(
-                        onClick = onToggleFavorite,
-                        size = 48.dp,
-                        isActive = isFavorite,
-                        activeColor = LightPeriwinkle
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) {
-                                Icons.Filled.Favorite
-                            } else {
-                                Icons.Outlined.FavoriteBorder
-                            },
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) LightPeriwinkle else TextSecondary
-                        )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth().height(250.dp),
-                    backgroundColor = Color.White.copy(alpha = 0.25f),
-                    borderColor = Color.White.copy(alpha = 0.4f)
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize().padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (perfume.imageUri.isNotEmpty()) {
-                            AsyncImage(
-                                model = perfume.imageUri,
-                                contentDescription = perfume.name,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = null,
-                                modifier = Modifier.size(80.dp),
-                                tint = TextSecondary.copy(alpha = 0.3f)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
 
                 GlassBadge(
                     text = perfume.brand,
@@ -599,187 +611,27 @@ private fun PerfumeDetailScreen(
                     textColor = SkyBlue
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
-                    text = perfume.name,
+                    perfume.name,
                     style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     ),
                     color = TextPrimary
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color.White.copy(alpha = 0.25f),
-                    borderColor = Color.White.copy(alpha = 0.4f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        GlassIconContainer(
-                            backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                            borderColor = SkyBlue.copy(alpha = 0.3f)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = SkyBlue,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Text(
-                            text = perfume.analogy,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color.White.copy(alpha = 0.25f),
-                    borderColor = Color.White.copy(alpha = 0.4f)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Core Feeling",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = perfume.coreFeeling,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = LightPeriwinkle,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color.White.copy(alpha = 0.25f),
-                    borderColor = Color.White.copy(alpha = 0.4f)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Best For",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = perfume.localContext,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextPrimary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
+                GlassDivider()
 
                 Text(
-                    text = "Scent Profile",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = TextPrimary
+                    reason,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextSecondary
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                val topNotes = perfume.topNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                val middleNotes = perfume.middleNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-                val baseNotes = perfume.baseNotes.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-
-                if (topNotes.isNotEmpty()) {
-                    NotesCardDetail(
-                        title = "Top Notes",
-                        description = "First impression, lasts 15-30 minutes",
-                        notes = topNotes,
-                        color = SkyBlue
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                if (middleNotes.isNotEmpty()) {
-                    NotesCardDetail(
-                        title = "Middle Notes",
-                        description = "Heart of the fragrance, lasts 3-5 hours",
-                        notes = middleNotes,
-                        color = LightPeriwinkle
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                if (baseNotes.isNotEmpty()) {
-                    NotesCardDetail(
-                        title = "Base Notes",
-                        description = "Long-lasting foundation, lasts 5-10+ hours",
-                        notes = baseNotes,
-                        color = Taupe
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(80.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun NotesCardDetail(
-    title: String,
-    description: String,
-    notes: List<String>,
-    color: Color
-) {
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        backgroundColor = Color.White.copy(alpha = 0.25f),
-        borderColor = Color.White.copy(alpha = 0.4f)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(color, shape = CircleShape)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = TextPrimary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                notes.take(3).forEach { note ->
-                    GlassChip(text = note)
+                GlassButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Got it!", color = Color.White)
                 }
             }
         }
@@ -787,286 +639,56 @@ private fun NotesCardDetail(
 }
 
 @Composable
-private fun RecommendationDialog(
-    state: RecommendationState,
+private fun ErrorDialog(
+    message: String,
     onDismiss: () -> Unit
 ) {
-    when (state) {
-        is RecommendationState.Success -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)),
+        contentAlignment = Alignment.Center
+    ) {
+        GlassCard(
+            modifier = Modifier.padding(32.dp),
+            backgroundColor = Color.White.copy(alpha = 0.95f),
+            borderColor = Color.White.copy(alpha = 0.6f),
+            cornerRadius = 24.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                GlassCard(
-                    modifier = Modifier.padding(32.dp),
-                    backgroundColor = Color.White.copy(alpha = 0.95f),
-                    borderColor = Color.White.copy(alpha = 0.6f),
-                    cornerRadius = 28.dp
+                Icon(
+                    imageVector = Icons.Default.Error,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = Taupe
+                )
+
+                Text(
+                    "Oops!",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = TextPrimary
+                )
+
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                GlassButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        modifier = Modifier.padding(28.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            SkyBlue.copy(alpha = 0.3f),
-                                            SkyBlue.copy(alpha = 0.1f)
-                                        )
-                                    )
-                                )
-                                .border(2.dp, SkyBlue.copy(alpha = 0.4f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = SkyBlue
-                            )
-                        }
-
-                        Text(
-                            text = "Your Perfect Match",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = TextPrimary,
-                            textAlign = TextAlign.Center
-                        )
-
-                        GlassCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            backgroundColor = Color.White.copy(alpha = 0.4f),
-                            borderColor = Color.White.copy(alpha = 0.6f),
-                            cornerRadius = 20.dp
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                if (state.perfume.imageUri.isNotEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(180.dp)
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .background(
-                                                Brush.verticalGradient(
-                                                    colors = listOf(
-                                                        Color.White.copy(alpha = 0.3f),
-                                                        Color.White.copy(alpha = 0.2f)
-                                                    )
-                                                )
-                                            )
-                                            .border(
-                                                1.dp,
-                                                Color.White.copy(alpha = 0.4f),
-                                                RoundedCornerShape(16.dp)
-                                            )
-                                    ) {
-                                        AsyncImage(
-                                            model = state.perfume.imageUri,
-                                            contentDescription = state.perfume.name,
-                                            modifier = Modifier.fillMaxSize().padding(12.dp),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    }
-                                }
-
-                                GlassBadge(
-                                    text = state.perfume.brand,
-                                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                                    borderColor = SkyBlue.copy(alpha = 0.3f),
-                                    textColor = SkyBlue
-                                )
-
-                                Text(
-                                    text = state.perfume.name,
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = TextPrimary
-                                )
-
-                                GlassDivider()
-
-                                Row(
-                                    verticalAlignment = Alignment.Top,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    GlassIconContainer(
-                                        backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                                        borderColor = SkyBlue.copy(alpha = 0.3f),
-                                        size = 36.dp
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.WbSunny,
-                                            contentDescription = null,
-                                            tint = SkyBlue,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Text(
-                                        text = state.reason,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = TextPrimary,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                        }
-
-                        GlassButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "Perfect!",
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
+                    Text("Okay", color = Color.White)
                 }
             }
         }
-        is RecommendationState.Loading -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
-            ) {
-                GlassCard(
-                    modifier = Modifier.padding(32.dp),
-                    backgroundColor = Color.White.copy(alpha = 0.95f),
-                    borderColor = Color.White.copy(alpha = 0.6f),
-                    cornerRadius = 28.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(40.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            SkyBlue.copy(alpha = 0.2f),
-                                            Color.Transparent
-                                        )
-                                    )
-                                )
-                                .border(2.dp, SkyBlue.copy(alpha = 0.3f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = SkyBlue,
-                                modifier = Modifier.size(48.dp),
-                                strokeWidth = 3.dp
-                            )
-                        }
-
-                        Text(
-                            "Analyzing your wardrobe...",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = TextSecondary,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        Text(
-                            "Considering weather & your preferences",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary.copy(alpha = 0.7f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
-        }
-        is RecommendationState.Error -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f)),
-                contentAlignment = Alignment.Center
-            ) {
-                GlassCard(
-                    modifier = Modifier.padding(32.dp),
-                    backgroundColor = Color.White.copy(alpha = 0.95f),
-                    borderColor = Color.White.copy(alpha = 0.6f),
-                    cornerRadius = 28.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            Taupe.copy(alpha = 0.3f),
-                                            Taupe.copy(alpha = 0.1f)
-                                        )
-                                    )
-                                )
-                                .border(1.5.dp, Taupe.copy(alpha = 0.4f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ErrorOutline,
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp),
-                                tint = Taupe
-                            )
-                        }
-
-                        Text(
-                            text = "Oops!",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = Taupe
-                        )
-
-                        Text(
-                            text = state.message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        GlassButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                "Close",
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        else -> {}
     }
 }

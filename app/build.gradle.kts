@@ -1,4 +1,3 @@
-import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
@@ -31,6 +30,8 @@ android {
 
         buildConfigField("String", "GEMINI_KEY", "\"${localProperties.getProperty("GEMINI_KEY")}\"")
         buildConfigField("String", "OPENWEATHER_KEY", "\"${localProperties.getProperty("OPENWEATHER_KEY")}\"")
+        buildConfigField("String", "SUPABASE_URL", "\"${localProperties.getProperty("SUPABASE_URL") ?: ""}\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"${localProperties.getProperty("SUPABASE_KEY") ?: ""}\"")
     }
 
     buildFeatures {
@@ -71,6 +72,8 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.foundation)
     implementation(libs.ui)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui.graphics)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -85,16 +88,24 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     // Gemini AI
-    implementation(libs.generativeai)
+    implementation(libs.generativeai.google)
 
     // Networking
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.okhttp)
+    implementation(libs.ktor.client.okhttp)
 
-    // Image Loading
     implementation(libs.coil.compose)
 
-    // Permissions
-    implementation(libs.accompanist.permissions)
+    implementation(libs.auth.kt)
+    implementation(libs.supabase.postgrest.kt)
+    implementation(libs.supabase.storage.kt)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.utils)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.2.6"))
 }

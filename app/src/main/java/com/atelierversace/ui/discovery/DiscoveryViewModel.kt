@@ -3,13 +3,12 @@ package com.atelierversace.ui.discovery
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.atelierversace.data.model.PersonaProfile
-import com.atelierversace.data.model.Perfume
-import com.atelierversace.data.repository.PerfumeRepository
-import com.atelierversace.utils.GeminiHelper
+import com.atelierversace.data.remote.PerfumeCloud
+import com.atelierversace.data.repository.CloudPerfumeRepository
+import com.atelierversace.data.repository.AIPersonalizationRepository
+import com.atelierversace.utils.PersonalizedGeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 sealed class DiscoveryState {
@@ -20,12 +19,13 @@ sealed class DiscoveryState {
 }
 
 class DiscoveryViewModel(
-    private val repository: PerfumeRepository,
-    private val geminiHelper: GeminiHelper
+    private val cloudRepository: CloudPerfumeRepository,
+    private val geminiHelper: PersonalizedGeminiHelper,
+    private val aiRepository: AIPersonalizationRepository
 ) : ViewModel() {
 
-    val wishlist = repository.getWishlist()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val _wishlist = MutableStateFlow<List<PerfumeCloud>>(emptyList())
+    val wishlist: StateFlow<List<PerfumeCloud>> = _wishlist
 
     private val _discoveryState = MutableStateFlow<DiscoveryState>(DiscoveryState.Idle)
     val discoveryState: StateFlow<DiscoveryState> = _discoveryState
@@ -33,10 +33,20 @@ class DiscoveryViewModel(
     private val _wishlistItems = MutableStateFlow<Set<String>>(emptySet())
     val wishlistItems: StateFlow<Set<String>> = _wishlistItems
 
-    init {
+    private var currentUserId: String? = null
+
+    fun initialize(userId: String) {
+        currentUserId = userId
+        loadWishlist(userId)
+    }
+
+    private fun loadWishlist(userId: String) {
         viewModelScope.launch {
-            wishlist.collect { perfumes ->
-                _wishlistItems.value = perfumes.map { "${it.brand}|${it.name}" }.toSet()
+            val result = cloudRepository.getWishlist(userId)
+            if (result.isSuccess) {
+                val items = result.getOrNull() ?: emptyList()
+                _wishlist.value = items
+                _wishlistItems.value = items.map { "${it.brand}|${it.name}" }.toSet()
             }
         }
     }
@@ -55,7 +65,14 @@ class DiscoveryViewModel(
             _discoveryState.value = DiscoveryState.Loading
 
             try {
-                val recommendations = geminiHelper.discoverPerfumes(query)
+                val personalization = if (currentUserId != null) {
+                    aiRepository.getPersonalization(currentUserId!!).getOrNull()
+                } else null
+
+                val recommendations = geminiHelper.discoverPersonalizedPerfumes(
+                    query,
+                    personalization
+                )
 
                 if (recommendations.isEmpty()) {
                     _discoveryState.value = DiscoveryState.Error(
@@ -74,6 +91,7 @@ class DiscoveryViewModel(
 
     fun toggleWishlist(profile: PersonaProfile) {
         val key = "${profile.brand}|${profile.name}"
+        val userId = currentUserId ?: return
 
         val currentSet = _wishlistItems.value
         if (currentSet.contains(key)) {
@@ -83,14 +101,15 @@ class DiscoveryViewModel(
         }
 
         viewModelScope.launch {
-            val existing = wishlist.value.find {
+            val existing = _wishlist.value.find {
                 it.brand == profile.brand && it.name == profile.name
             }
 
             if (existing != null) {
-                repository.deletePerfume(existing)
+                cloudRepository.deletePerfume(existing.id ?: "")
             } else {
-                val perfume = Perfume(
+                val perfume = PerfumeCloud(
+                    userId = userId,
                     brand = profile.brand,
                     name = profile.name,
                     imageUri = "",
@@ -100,19 +119,23 @@ class DiscoveryViewModel(
                     topNotes = profile.topNotes.joinToString(", "),
                     middleNotes = profile.middleNotes.joinToString(", "),
                     baseNotes = profile.baseNotes.joinToString(", "),
-                    isWishlist = true
+                    isWishlist = true,
+                    timestamp = System.currentTimeMillis().toString()
                 )
-                repository.addPerfume(perfume)
+                cloudRepository.addPerfume(perfume)
             }
+
+            loadWishlist(userId)
         }
     }
 
-    fun removeFromWishlist(perfume: Perfume) {
+    fun removeFromWishlist(perfume: PerfumeCloud) {
         val key = "${perfume.brand}|${perfume.name}"
         _wishlistItems.value = _wishlistItems.value - key
 
         viewModelScope.launch {
-            repository.deletePerfume(perfume)
+            cloudRepository.deletePerfume(perfume.id ?: "")
+            currentUserId?.let { loadWishlist(it) }
         }
     }
 

@@ -2,73 +2,88 @@ package com.atelierversace.ui.wardrobe
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.atelierversace.data.model.Perfume
-import com.atelierversace.data.repository.PerfumeRepository
+import com.atelierversace.data.remote.PerfumeCloud
+import com.atelierversace.data.repository.CloudPerfumeRepository
 import com.atelierversace.data.repository.WeatherRepository
-import com.atelierversace.utils.GeminiHelper
+import com.atelierversace.data.repository.AIPersonalizationRepository
+import com.atelierversace.utils.PersonalizedGeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 sealed class RecommendationState {
     object Idle : RecommendationState()
     object Loading : RecommendationState()
-    data class Success(val perfume: Perfume, val reason: String) : RecommendationState()
+    data class Success(val perfume: PerfumeCloud, val reason: String) : RecommendationState()
     data class Error(val message: String) : RecommendationState()
 }
 
 class WardrobeViewModel(
-    private val perfumeRepository: PerfumeRepository,
+    private val cloudRepository: CloudPerfumeRepository,
     private val weatherRepository: WeatherRepository,
-    private val geminiHelper: GeminiHelper
+    private val geminiHelper: PersonalizedGeminiHelper,
+    private val aiRepository: AIPersonalizationRepository
 ) : ViewModel() {
 
-    val wardrobe = perfumeRepository.getWardrobe()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val _wardrobe = MutableStateFlow<List<PerfumeCloud>>(emptyList())
+    val wardrobe: StateFlow<List<PerfumeCloud>> = _wardrobe
 
-    val wishlist = perfumeRepository.getWishlist()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val _wishlist = MutableStateFlow<List<PerfumeCloud>>(emptyList())
+    val wishlist: StateFlow<List<PerfumeCloud>> = _wishlist
 
     private val _recommendationState = MutableStateFlow<RecommendationState>(RecommendationState.Idle)
     val recommendationState: StateFlow<RecommendationState> = _recommendationState
 
-    private val _favorites = MutableStateFlow<Set<Int>>(emptySet())
-    val favorites: StateFlow<Set<Int>> = _favorites
+    private val _favorites = MutableStateFlow<Set<String>>(emptySet())
+    val favorites: StateFlow<Set<String>> = _favorites
 
-    init {
+    private var currentUserId: String? = null
+
+    fun initialize(userId: String) {
+        currentUserId = userId
+        loadWardrobe(userId)
+        loadWishlist(userId)
+    }
+
+    private fun loadWardrobe(userId: String) {
         viewModelScope.launch {
-            wishlist.collect { wishlistPerfumes ->
-                _favorites.value = wishlistPerfumes.map { it.id }.toSet()
+            val result = cloudRepository.getWardrobe(userId)
+            if (result.isSuccess) {
+                _wardrobe.value = result.getOrNull() ?: emptyList()
             }
         }
     }
 
-    fun isFavorite(perfumeId: Int): Boolean {
+    private fun loadWishlist(userId: String) {
+        viewModelScope.launch {
+            val result = cloudRepository.getWishlist(userId)
+            if (result.isSuccess) {
+                val wishlistItems = result.getOrNull() ?: emptyList()
+                _wishlist.value = wishlistItems
+                _favorites.value = wishlistItems.map { it.id ?: "" }.toSet()
+            }
+        }
+    }
+
+    fun isFavorite(perfumeId: String): Boolean {
         return _favorites.value.contains(perfumeId)
     }
 
-    fun toggleFavorite(perfumeId: Int) {
+    fun toggleFavorite(perfumeId: String) {
         viewModelScope.launch {
-            val perfume = wardrobe.value.find { it.id == perfumeId } ?: return@launch
+            val perfume = _wardrobe.value.find { it.id == perfumeId } ?: return@launch
 
-            val existingInWishlist = wishlist.value.find {
-                it.brand == perfume.brand && it.name == perfume.name
-            }
+            val isFavorite = _favorites.value.contains(perfumeId)
 
-            if (existingInWishlist != null) {
-                perfumeRepository.deletePerfume(existingInWishlist)
+            cloudRepository.toggleFavorite(perfumeId, !isFavorite)
+
+            if (isFavorite) {
                 _favorites.value = _favorites.value - perfumeId
             } else {
-                val wishlistPerfume = perfume.copy(
-                    id = 0,
-                    isWishlist = true,
-                    timestamp = System.currentTimeMillis()
-                )
-                perfumeRepository.addPerfume(wishlistPerfume)
                 _favorites.value = _favorites.value + perfumeId
             }
+
+            currentUserId?.let { loadWishlist(it) }
         }
     }
 
@@ -78,7 +93,8 @@ class WardrobeViewModel(
 
             try {
                 val weatherResult = weatherRepository.getCurrentWeather()
-                val perfumes = wardrobe.value
+                val perfumes = _wardrobe.value
+                val userId = currentUserId
 
                 if (perfumes.isEmpty()) {
                     _recommendationState.value = RecommendationState.Error(
@@ -95,8 +111,14 @@ class WardrobeViewModel(
                 }
 
                 val weather = weatherResult.getOrThrow()
-                val recommendation = geminiHelper.recommendPerfumeWithQuery(
+
+                val personalization = if (userId != null) {
+                    aiRepository.getPersonalization(userId).getOrNull()
+                } else null
+
+                val recommendation = geminiHelper.generatePersonalizedRecommendation(
                     perfumes,
+                    personalization,
                     weather,
                     userQuery
                 )
@@ -108,10 +130,9 @@ class WardrobeViewModel(
                     return@launch
                 }
 
-                _recommendationState.value = RecommendationState.Success(
-                    recommendation.first,
-                    recommendation.second
-                )
+                val (perfume, reason, _) = recommendation
+
+                _recommendationState.value = RecommendationState.Success(perfume, reason)
             } catch (e: Exception) {
                 _recommendationState.value = RecommendationState.Error(
                     e.message ?: "Unknown error occurred"
