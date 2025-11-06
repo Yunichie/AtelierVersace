@@ -30,13 +30,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.atelierversace.data.model.PersonaProfile
 import com.atelierversace.ui.components.*
 import com.atelierversace.ui.theme.*
 import java.io.ByteArrayOutputStream
-import java.io.File
 
 @Composable
 fun ScentLensScreen(
@@ -46,8 +44,13 @@ fun ScentLensScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
-    val userId = remember {
-        com.atelierversace.data.repository.AuthRepository().getCurrentUser()?.id ?: ""
+    var userId by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        val authRepo = com.atelierversace.data.repository.AuthRepository()
+        val user = authRepo.getCurrentUser()
+        userId = user?.id ?: ""
+        println("DEBUG - ScentLensScreen userId: $userId")
     }
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
@@ -179,14 +182,20 @@ fun ScentLensScreen(
                             imageUri = imageUri,
                             capturedBitmap = capturedBitmap,
                             onAddToWardrobe = {
-                                viewModel.addToWardrobe(
-                                    brand = currentState.brand,
-                                    name = currentState.name,
-                                    profile = currentState.profile,
-                                    imageUri = currentState.imageUri,
-                                    userId = userId,
-                                    onComplete = onNavigateToWardrobe
-                                )
+                                if (userId.isEmpty()) {
+                                    println("ERROR - No userId available")
+                                    viewModel.reset()
+                                } else {
+                                    println("DEBUG - Adding to wardrobe with userId: $userId")
+                                    viewModel.addToWardrobe(
+                                        brand = currentState.brand,
+                                        name = currentState.name,
+                                        profile = currentState.profile,
+                                        imageUri = currentState.imageUri,
+                                        userId = userId,
+                                        onComplete = onNavigateToWardrobe
+                                    )
+                                }
                             },
                             onScanAnother = {
                                 viewModel.reset()

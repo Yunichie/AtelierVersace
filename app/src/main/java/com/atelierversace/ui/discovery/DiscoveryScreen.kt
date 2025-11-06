@@ -29,6 +29,15 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
     val discoveryState by viewModel.discoveryState.collectAsState()
     val wishlistItems by viewModel.wishlistItems.collectAsState()
 
+    LaunchedEffect(Unit) {
+        val authRepo = com.atelierversace.data.repository.AuthRepository()
+        val user = authRepo.getCurrentUser()
+        user?.let {
+            println("DEBUG - Initializing DiscoveryScreen with userId: ${it.id}")
+            viewModel.initialize(it.id)
+        }
+    }
+
     var query by remember { mutableStateOf("") }
     var isSearchExpanded by remember { mutableStateOf(false) }
     var selectedProfile by remember { mutableStateOf<PersonaProfile?>(null) }

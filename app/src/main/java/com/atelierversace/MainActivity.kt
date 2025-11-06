@@ -56,7 +56,8 @@ class MainActivity : ComponentActivity() {
             this,
             ScentLensViewModelFactory(
                 cloudPerfumeRepository,
-                geminiHelper
+                geminiHelper,
+                authRepository
             )
         )[ScentLensViewModel::class.java]
 
@@ -75,7 +76,8 @@ class MainActivity : ComponentActivity() {
             DiscoveryViewModelFactory(
                 cloudPerfumeRepository,
                 personalizedGeminiHelper,
-                aiPersonalizationRepository
+                aiPersonalizationRepository,
+                authRepository
             )
         )[DiscoveryViewModel::class.java]
 
@@ -137,12 +139,13 @@ class ProfileViewModelFactory(
 
 class ScentLensViewModelFactory(
     private val cloudPerfumeRepository: CloudPerfumeRepository,
-    private val geminiHelper: GeminiHelper
+    private val geminiHelper: GeminiHelper,
+    private val authRepository: AuthRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ScentLensViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ScentLensViewModel(cloudPerfumeRepository, geminiHelper) as T
+            return ScentLensViewModel(cloudPerfumeRepository, geminiHelper, authRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -171,7 +174,8 @@ class WardrobeViewModelFactory(
 class DiscoveryViewModelFactory(
     private val cloudPerfumeRepository: CloudPerfumeRepository,
     private val personalizedGeminiHelper: PersonalizedGeminiHelper,
-    private val aiPersonalizationRepository: AIPersonalizationRepository
+    private val aiPersonalizationRepository: AIPersonalizationRepository,
+    private val authRepository: AuthRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DiscoveryViewModel::class.java)) {
@@ -179,7 +183,8 @@ class DiscoveryViewModelFactory(
             return DiscoveryViewModel(
                 cloudPerfumeRepository,
                 personalizedGeminiHelper,
-                aiPersonalizationRepository
+                aiPersonalizationRepository,
+                authRepository
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

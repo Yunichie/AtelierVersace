@@ -13,6 +13,40 @@ class PersonalizedGeminiHelper {
         apiKey = BuildConfig.GEMINI_KEY
     )
 
+    private fun cleanJsonResponse(response: String): String {
+        var cleaned = response.trim()
+
+        if (cleaned.startsWith("```json")) {
+            cleaned = cleaned.removePrefix("```json").removeSuffix("```").trim()
+        } else if (cleaned.startsWith("```")) {
+            cleaned = cleaned.removePrefix("```").removeSuffix("```").trim()
+        }
+
+        val firstBrace = cleaned.indexOf('{')
+        val firstBracket = cleaned.indexOf('[')
+
+        if (firstBrace > 0 || firstBracket > 0) {
+            val startIndex = when {
+                firstBrace == -1 -> firstBracket
+                firstBracket == -1 -> firstBrace
+                else -> minOf(firstBrace, firstBracket)
+            }
+            cleaned = cleaned.substring(startIndex)
+        }
+
+        val lastBrace = cleaned.lastIndexOf('}')
+        val lastBracket = cleaned.lastIndexOf(']')
+
+        if (lastBrace != -1 || lastBracket != -1) {
+            val endIndex = maxOf(lastBrace, lastBracket)
+            if (endIndex != -1) {
+                cleaned = cleaned.substring(0, endIndex + 1)
+            }
+        }
+
+        return cleaned
+    }
+
     suspend fun generatePersonalizedRecommendation(
         wardrobe: List<PerfumeCloud>,
         personalization: AIPersonalization?,
@@ -23,8 +57,7 @@ class PersonalizedGeminiHelper {
 
         try {
             val perfumeList = wardrobe.joinToString("\n") {
-                "${it.id}. ${it.brand} ${it.name} - ${it.analogy} (${it.coreFeeling})\n" +
-                        "   Top: ${it.topNotes} | Middle: ${it.middleNotes} | Base: ${it.baseNotes}"
+                "ID: ${it.id}\nBrand: ${it.brand}\nName: ${it.name}\nAnalogy: ${it.analogy}\nFeeling: ${it.coreFeeling}\nTop: ${it.topNotes}\nMiddle: ${it.middleNotes}\nBase: ${it.baseNotes}\n"
             }
 
             val personalizationContext = if (personalization != null) {
@@ -32,51 +65,42 @@ class PersonalizedGeminiHelper {
                 User Preferences:
                 - Favorite Brands: ${personalization.preferredBrands.joinToString(", ")}
                 - Preferred Notes: ${personalization.preferredNotes.joinToString(", ")}
-                - Style Profile: ${personalization.styleProfile}
-                - Intensity Preference: ${personalization.intensityPreference}
+                - Style: ${personalization.styleProfile}
+                - Intensity: ${personalization.intensityPreference}
                 """
             } else {
-                "No personalization data yet - making general recommendation"
+                "No personalization data available"
             }
 
-            val occasionContext = if (occasion != null) {
-                "Occasion: $occasion"
-            } else {
-                "General daily wear"
-            }
+            val occasionContext = occasion ?: "General daily wear"
 
             val prompt = """
-                You are a personalized AI fragrance stylist. Recommend ONE perfume from the user's wardrobe.
+                You are a personalized fragrance AI. Recommend ONE perfume from this wardrobe.
                 
-                User's Wardrobe:
+                WARDROBE:
                 $perfumeList
                 
                 $personalizationContext
                 
-                Current Context:
+                CONTEXT:
                 - Weather: ${weather.temperature}°C, ${weather.humidity}% humidity, ${weather.description}
-                - Location: Surabaya, Indonesia (tropical, humid)
-                - $occasionContext
+                - Location: Surabaya, Indonesia (tropical)
+                - Occasion: $occasionContext
                 
-                Consider:
-                1. User's established preferences (brands, notes, style)
-                2. Weather suitability for tropical climate
-                3. Occasion appropriateness
-                4. Recent usage patterns (avoid repeating too often)
-                
-                Also suggest ONE complementary perfume from their wardrobe for layering (if suitable), or "none" if layering isn't recommended.
-                
-                Respond ONLY with JSON WITHOUT codeblock:
+                Respond with ONLY valid JSON (no markdown, no explanations, no code blocks):
                 {
-                    "perfumeId": "<id>",
-                    "reason": "2-3 sentences explaining why this matches their preferences and context",
+                    "perfumeId": "<exact id from list>",
+                    "reason": "2-3 sentences explaining why this fits preferences and context",
                     "layeringId": "<id or 'none'>",
-                    "layeringReason": "Brief explanation of why this layering works, or 'Not recommended' if none"
+                    "layeringReason": "Brief layering explanation or 'Not recommended'"
                 }
             """.trimIndent()
 
             val response = textModel.generateContent(prompt)
-            val jsonText = response.text?.trim() ?: return null
+            val jsonText = cleanJsonResponse(response.text ?: return null)
+
+            println("DEBUG - Recommendation response: $jsonText")
+
             val json = JSONObject(jsonText)
 
             val perfumeId = json.getString("perfumeId")
@@ -84,7 +108,11 @@ class PersonalizedGeminiHelper {
             val layeringId = json.optString("layeringId", "none")
             val layeringReason = json.optString("layeringReason", "")
 
-            val selectedPerfume = wardrobe.find { it.id == perfumeId } ?: return null
+            val selectedPerfume = wardrobe.find { it.id == perfumeId }
+            if (selectedPerfume == null) {
+                println("ERROR: Could not find perfume with ID: $perfumeId")
+                return null
+            }
 
             val layeringSuggestion = if (layeringId != "none") {
                 val layerPerfume = wardrobe.find { it.id == layeringId }
@@ -100,6 +128,7 @@ class PersonalizedGeminiHelper {
             return Triple(selectedPerfume, reason, layeringSuggestion)
         } catch (e: Exception) {
             e.printStackTrace()
+            println("ERROR in recommendation: ${e.message}")
             return null
         }
     }
@@ -111,35 +140,35 @@ class PersonalizedGeminiHelper {
         try {
             val personalizationContext = if (personalization != null) {
                 """
-                Consider the user's preferences:
-                - They love brands like: ${personalization.preferredBrands.joinToString(", ")}
-                - They prefer notes like: ${personalization.preferredNotes.joinToString(", ")}
-                - Their style is: ${personalization.styleProfile}
-                - Intensity preference: ${personalization.intensityPreference}
+                USER PREFERENCES:
+                - Favorite brands: ${personalization.preferredBrands.joinToString(", ")}
+                - Preferred notes: ${personalization.preferredNotes.joinToString(", ")}
+                - Style: ${personalization.styleProfile}
+                - Intensity: ${personalization.intensityPreference}
                 
-                Suggest perfumes that align with these preferences while matching the query.
+                Prioritize perfumes matching these preferences.
                 """
             } else {
                 ""
             }
 
             val prompt = """
-                Based on this query: "$query"
+                Query: "$query"
                 
                 $personalizationContext
                 
-                Use Google Search to find 3-5 perfumes that match.
-                Prioritize real, available perfumes that fit the user's taste profile.
-                Include actual brand names, perfume names, and complete note breakdowns.
+                Use Google Search to find 3-5 REAL perfumes that match this query.
+                Include actual brand names, perfume names, and accurate note information.
+                Focus on popular, currently available perfumes.
                 
-                Respond ONLY with JSON array WITHOUT codeblock:
+                Respond with ONLY valid JSON array (no markdown, no code blocks):
                 [
                     {
-                        "brand": "Brand Name",
-                        "name": "Perfume Name",
-                        "analogy": "Evocative analogy",
-                        "coreFeeling": "Feeling words",
-                        "localContext": "Suitability for Surabaya climate",
+                        "brand": "Real Brand Name",
+                        "name": "Real Perfume Name",
+                        "analogy": "Evocative comparison",
+                        "coreFeeling": "2-3 feeling words",
+                        "localContext": "Suitability for Surabaya (tropical, humid, 28-32°C)",
                         "topNotes": ["Note1", "Note2", "Note3"],
                         "middleNotes": ["Note1", "Note2", "Note3"],
                         "baseNotes": ["Note1", "Note2", "Note3"]
@@ -148,33 +177,45 @@ class PersonalizedGeminiHelper {
             """.trimIndent()
 
             val response = textModel.generateContent(prompt)
-            val jsonText = response.text?.trim() ?: return emptyList()
+            val jsonText = cleanJsonResponse(response.text ?: return emptyList())
+
+            println("DEBUG - Discovery response: $jsonText")
+
             val jsonArray = JSONArray(jsonText)
             val profiles = mutableListOf<com.atelierversace.data.model.PersonaProfile>()
 
             for (i in 0 until jsonArray.length()) {
-                val json = jsonArray.getJSONObject(i)
-                val topNotesArray = json.getJSONArray("topNotes")
-                val middleNotesArray = json.getJSONArray("middleNotes")
-                val baseNotesArray = json.getJSONArray("baseNotes")
+                try {
+                    val json = jsonArray.getJSONObject(i)
 
-                profiles.add(
-                    com.atelierversace.data.model.PersonaProfile(
-                        brand = json.getString("brand"),
-                        name = json.getString("name"),
-                        analogy = json.getString("analogy"),
-                        coreFeeling = json.getString("coreFeeling"),
-                        localContext = json.getString("localContext"),
-                        topNotes = (0 until topNotesArray.length()).map { topNotesArray.getString(it) },
-                        middleNotes = (0 until middleNotesArray.length()).map { middleNotesArray.getString(it) },
-                        baseNotes = (0 until baseNotesArray.length()).map { baseNotesArray.getString(it) }
+                    profiles.add(
+                        com.atelierversace.data.model.PersonaProfile(
+                            brand = json.getString("brand"),
+                            name = json.getString("name"),
+                            analogy = json.getString("analogy"),
+                            coreFeeling = json.getString("coreFeeling"),
+                            localContext = json.getString("localContext"),
+                            topNotes = json.getJSONArray("topNotes").let { array ->
+                                (0 until array.length()).map { array.getString(it) }
+                            },
+                            middleNotes = json.getJSONArray("middleNotes").let { array ->
+                                (0 until array.length()).map { array.getString(it) }
+                            },
+                            baseNotes = json.getJSONArray("baseNotes").let { array ->
+                                (0 until array.length()).map { array.getString(it) }
+                            }
+                        )
                     )
-                )
+                } catch (e: Exception) {
+                    println("ERROR parsing profile $i: ${e.message}")
+                    continue
+                }
             }
 
             return profiles
         } catch (e: Exception) {
             e.printStackTrace()
+            println("ERROR in discovery: ${e.message}")
             return emptyList()
         }
     }
@@ -187,72 +228,77 @@ class PersonalizedGeminiHelper {
 
         try {
             val perfumeList = wardrobe.joinToString("\n") {
-                "${it.id}. ${it.brand} ${it.name}\n" +
-                        "   Top: ${it.topNotes} | Middle: ${it.middleNotes} | Base: ${it.baseNotes}"
+                "ID: ${it.id} | ${it.brand} ${it.name}\nTop: ${it.topNotes} | Middle: ${it.middleNotes} | Base: ${it.baseNotes}\n"
             }
 
             val personalizationContext = if (personalization != null) {
-                "User prefers: ${personalization.styleProfile} style with ${personalization.preferredNotes.take(5).joinToString(", ")} notes"
+                "User prefers: ${personalization.styleProfile} style with ${personalization.preferredNotes.take(5).joinToString(", ")}"
             } else {
                 "No preference data"
             }
 
             val prompt = """
-                Analyze this perfume wardrobe and suggest 3-5 creative layering combinations.
+                Analyze this wardrobe and suggest 3-5 layering combinations.
                 
+                WARDROBE:
                 $perfumeList
                 
                 $personalizationContext
                 
-                Consider:
-                - Note harmony and complementary scents
-                - Base + accent layering principles
-                - User's style preferences
-                - Practical wearability
+                Consider note harmony, complementary scents, and wearability.
                 
-                Respond with JSON array WITHOUT codeblock:
+                Respond with ONLY valid JSON array (no markdown, no code blocks):
                 [
                     {
                         "baseId": "<id>",
                         "layerId": "<id>",
-                        "name": "Creative combination name",
-                        "description": "Why this works",
-                        "occasion": "Best for this occasion",
-                        "harmonyScore": 0-100
+                        "name": "Creative name",
+                        "description": "Why it works",
+                        "occasion": "Best occasion",
+                        "harmonyScore": 85
                     }
                 ]
             """.trimIndent()
 
             val response = textModel.generateContent(prompt)
-            val jsonText = response.text?.trim() ?: return emptyList()
+            val jsonText = cleanJsonResponse(response.text ?: return emptyList())
+
+            println("DEBUG - Layering response: $jsonText")
+
             val jsonArray = JSONArray(jsonText)
             val combinations = mutableListOf<LayeringCombination>()
 
             for (i in 0 until jsonArray.length()) {
-                val json = jsonArray.getJSONObject(i)
-                val baseId = json.getString("baseId")
-                val layerId = json.getString("layerId")
+                try {
+                    val json = jsonArray.getJSONObject(i)
+                    val baseId = json.getString("baseId")
+                    val layerId = json.getString("layerId")
 
-                val basePerfume = wardrobe.find { it.id == baseId }
-                val layerPerfume = wardrobe.find { it.id == layerId }
+                    val basePerfume = wardrobe.find { it.id == baseId }
+                    val layerPerfume = wardrobe.find { it.id == layerId }
 
-                if (basePerfume != null && layerPerfume != null) {
-                    combinations.add(
-                        LayeringCombination(
-                            basePerfume = basePerfume,
-                            layerPerfume = layerPerfume,
-                            name = json.getString("name"),
-                            description = json.getString("description"),
-                            occasion = json.getString("occasion"),
-                            harmonyScore = json.optInt("harmonyScore", 80)
+                    if (basePerfume != null && layerPerfume != null) {
+                        combinations.add(
+                            LayeringCombination(
+                                basePerfume = basePerfume,
+                                layerPerfume = layerPerfume,
+                                name = json.getString("name"),
+                                description = json.getString("description"),
+                                occasion = json.getString("occasion"),
+                                harmonyScore = json.optInt("harmonyScore", 80)
+                            )
                         )
-                    )
+                    }
+                } catch (e: Exception) {
+                    println("ERROR parsing combination $i: ${e.message}")
+                    continue
                 }
             }
 
             return combinations
         } catch (e: Exception) {
             e.printStackTrace()
+            println("ERROR in layering: ${e.message}")
             return emptyList()
         }
     }
