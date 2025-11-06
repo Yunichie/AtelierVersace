@@ -37,10 +37,46 @@ fun AuthScreen(
     var showPassword by remember { mutableStateOf(false) }
     var showResetPassword by remember { mutableStateOf(false) }
 
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var displayNameError by remember { mutableStateOf<String?>(null) }
+
+    var showResetSuccess by remember { mutableStateOf(false) }
+
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
             onAuthSuccess()
         }
+    }
+
+    fun validateEmail(email: String): String? {
+        return when {
+            email.isBlank() -> "Email is required"
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Invalid email format"
+            else -> null
+        }
+    }
+
+    fun validatePassword(password: String): String? {
+        return when {
+            password.isBlank() -> "Password is required"
+            password.length < 6 -> "Password must be at least 6 characters"
+            else -> null
+        }
+    }
+
+    fun validateDisplayName(name: String): String? {
+        return when {
+            name.isBlank() -> "Display name is required"
+            name.length < 2 -> "Display name must be at least 2 characters"
+            else -> null
+        }
+    }
+
+    LaunchedEffect(isLogin) {
+        emailError = null
+        passwordError = null
+        displayNameError = null
     }
 
     Box(
@@ -123,21 +159,79 @@ fun AuthScreen(
                     )
 
                     if (!loginMode) {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            GlassCard(
+                                modifier = Modifier.fillMaxWidth(),
+                                backgroundColor = Color.White.copy(alpha = 0.3f),
+                                borderColor = if (displayNameError != null) {
+                                    Taupe.copy(alpha = 0.6f)
+                                } else {
+                                    Color.White.copy(alpha = 0.5f)
+                                }
+                            ) {
+                                TextField(
+                                    value = displayName,
+                                    onValueChange = {
+                                        displayName = it
+                                        displayNameError = null
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = {
+                                        Text("Display Name", color = TextSecondary.copy(alpha = 0.7f))
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = null,
+                                            tint = SkyBlue
+                                        )
+                                    },
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = Color.Transparent,
+                                        unfocusedContainerColor = Color.Transparent,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        cursorColor = SkyBlue
+                                    ),
+                                    singleLine = true,
+                                    isError = displayNameError != null
+                                )
+                            }
+
+                            displayNameError?.let { error ->
+                                Text(
+                                    text = error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Taupe,
+                                    modifier = Modifier.padding(start = 16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         GlassCard(
                             modifier = Modifier.fillMaxWidth(),
                             backgroundColor = Color.White.copy(alpha = 0.3f),
-                            borderColor = Color.White.copy(alpha = 0.5f)
+                            borderColor = if (emailError != null) {
+                                Taupe.copy(alpha = 0.6f)
+                            } else {
+                                Color.White.copy(alpha = 0.5f)
+                            }
                         ) {
                             TextField(
-                                value = displayName,
-                                onValueChange = { displayName = it },
+                                value = email,
+                                onValueChange = {
+                                    email = it
+                                    emailError = null
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = {
-                                    Text("Display Name", color = TextSecondary.copy(alpha = 0.7f))
+                                    Text("Email", color = TextSecondary.copy(alpha = 0.7f))
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Default.Person,
+                                        imageVector = Icons.Default.Email,
                                         contentDescription = null,
                                         tint = SkyBlue
                                     )
@@ -149,83 +243,82 @@ fun AuthScreen(
                                     unfocusedIndicatorColor = Color.Transparent,
                                     cursorColor = SkyBlue
                                 ),
-                                singleLine = true
+                                singleLine = true,
+                                isError = emailError != null
+                            )
+                        }
+
+                        emailError?.let { error ->
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Taupe,
+                                modifier = Modifier.padding(start = 16.dp)
                             )
                         }
                     }
 
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        backgroundColor = Color.White.copy(alpha = 0.3f),
-                        borderColor = Color.White.copy(alpha = 0.5f)
-                    ) {
-                        TextField(
-                            value = email,
-                            onValueChange = { email = it },
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        GlassCard(
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = {
-                                Text("Email", color = TextSecondary.copy(alpha = 0.7f))
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = null,
-                                    tint = SkyBlue
-                                )
-                            },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = SkyBlue
-                            ),
-                            singleLine = true
-                        )
-                    }
-
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        backgroundColor = Color.White.copy(alpha = 0.3f),
-                        borderColor = Color.White.copy(alpha = 0.5f)
-                    ) {
-                        TextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = {
-                                Text("Password", color = TextSecondary.copy(alpha = 0.7f))
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = null,
-                                    tint = SkyBlue
-                                )
-                            },
-                            trailingIcon = {
-                                IconButton(onClick = { showPassword = !showPassword }) {
-                                    Icon(
-                                        imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                        contentDescription = null,
-                                        tint = TextSecondary
-                                    )
-                                }
-                            },
-                            visualTransformation = if (showPassword) {
-                                VisualTransformation.None
+                            backgroundColor = Color.White.copy(alpha = 0.3f),
+                            borderColor = if (passwordError != null) {
+                                Taupe.copy(alpha = 0.6f)
                             } else {
-                                PasswordVisualTransformation()
-                            },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = SkyBlue
-                            ),
-                            singleLine = true
-                        )
+                                Color.White.copy(alpha = 0.5f)
+                            }
+                        ) {
+                            TextField(
+                                value = password,
+                                onValueChange = {
+                                    password = it
+                                    passwordError = null
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = {
+                                    Text("Password", color = TextSecondary.copy(alpha = 0.7f))
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = null,
+                                        tint = SkyBlue
+                                    )
+                                },
+                                trailingIcon = {
+                                    IconButton(onClick = { showPassword = !showPassword }) {
+                                        Icon(
+                                            imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = null,
+                                            tint = TextSecondary
+                                        )
+                                    }
+                                },
+                                visualTransformation = if (showPassword) {
+                                    VisualTransformation.None
+                                } else {
+                                    PasswordVisualTransformation()
+                                },
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    cursorColor = SkyBlue
+                                ),
+                                singleLine = true,
+                                isError = passwordError != null
+                            )
+                        }
+
+                        passwordError?.let { error ->
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Taupe,
+                                modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
                     }
 
                     if (loginMode) {
@@ -246,9 +339,20 @@ fun AuthScreen(
                     GlassButton(
                         onClick = {
                             if (loginMode) {
-                                viewModel.signIn(email, password)
+                                emailError = validateEmail(email)
+                                passwordError = validatePassword(password)
+
+                                if (emailError == null && passwordError == null) {
+                                    viewModel.signIn(email, password)
+                                }
                             } else {
-                                viewModel.signUp(email, password, displayName)
+                                displayNameError = validateDisplayName(displayName)
+                                emailError = validateEmail(email)
+                                passwordError = validatePassword(password)
+
+                                if (displayNameError == null && emailError == null && passwordError == null) {
+                                    viewModel.signUp(email, password, displayName)
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -276,13 +380,31 @@ fun AuthScreen(
                     }
 
                     if (authState is AuthState.Error) {
-                        Text(
-                            text = (authState as AuthState.Error).message,
-                            color = Taupe,
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            backgroundColor = Taupe.copy(alpha = 0.1f),
+                            borderColor = Taupe.copy(alpha = 0.3f)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = Taupe,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = (authState as AuthState.Error).message,
+                                    color = Taupe,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -297,7 +419,12 @@ fun AuthScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
-                        TextButton(onClick = { isLogin = !isLogin }) {
+                        TextButton(onClick = {
+                            isLogin = !isLogin
+                            email = ""
+                            password = ""
+                            displayName = ""
+                        }) {
                             Text(
                                 text = if (loginMode) "Sign Up" else "Sign In",
                                 color = SkyBlue,
@@ -312,6 +439,7 @@ fun AuthScreen(
 
     if (showResetPassword) {
         var resetEmail by remember { mutableStateOf(email) }
+        var resetEmailError by remember { mutableStateOf<String?>(null) }
 
         Box(
             modifier = Modifier
@@ -341,25 +469,44 @@ fun AuthScreen(
                         color = TextSecondary
                     )
 
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        backgroundColor = Color.White.copy(alpha = 0.3f),
-                        borderColor = Color.White.copy(alpha = 0.5f)
-                    ) {
-                        TextField(
-                            value = resetEmail,
-                            onValueChange = { resetEmail = it },
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        GlassCard(
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Email", color = TextSecondary.copy(alpha = 0.7f)) },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = SkyBlue
-                            ),
-                            singleLine = true
-                        )
+                            backgroundColor = Color.White.copy(alpha = 0.3f),
+                            borderColor = if (resetEmailError != null) {
+                                Taupe.copy(alpha = 0.6f)
+                            } else {
+                                Color.White.copy(alpha = 0.5f)
+                            }
+                        ) {
+                            TextField(
+                                value = resetEmail,
+                                onValueChange = {
+                                    resetEmail = it
+                                    resetEmailError = null
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("Email", color = TextSecondary.copy(alpha = 0.7f)) },
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    cursorColor = SkyBlue
+                                ),
+                                singleLine = true,
+                                isError = resetEmailError != null
+                            )
+                        }
+
+                        resetEmailError?.let { error ->
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Taupe,
+                                modifier = Modifier.padding(start = 16.dp)
+                            )
+                        }
                     }
 
                     Row(
@@ -367,7 +514,10 @@ fun AuthScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedGlassButton(
-                            onClick = { showResetPassword = false },
+                            onClick = {
+                                showResetPassword = false
+                                resetEmailError = null
+                            },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Cancel", color = TextSecondary)
@@ -375,14 +525,55 @@ fun AuthScreen(
 
                         GlassButton(
                             onClick = {
-                                viewModel.resetPassword(resetEmail)
-                                showResetPassword = false
+                                resetEmailError = validateEmail(resetEmail)
+                                if (resetEmailError == null) {
+                                    viewModel.resetPassword(resetEmail)
+                                    showResetPassword = false
+                                    showResetSuccess = true
+                                }
                             },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("Send Link", color = Color.White)
                         }
                     }
+                }
+            }
+        }
+    }
+
+    if (showResetSuccess) {
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(3000)
+            showResetSuccess = false
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 100.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            GlassCard(
+                modifier = Modifier.padding(horizontal = 32.dp),
+                backgroundColor = SkyBlue.copy(alpha = 0.9f),
+                borderColor = Color.White.copy(alpha = 0.5f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                    Text(
+                        "Password reset link sent! Check your email.",
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
         }
