@@ -67,12 +67,14 @@ class ScentLensViewModel(
             try {
                 val actualUserId = userId.ifEmpty {
                     authRepository.getCurrentUser()?.id ?: run {
+                        println("ERROR - Not authenticated")
                         _state.value = ScentLensState.Error("Not authenticated. Please sign in.")
                         return@launch
                     }
                 }
 
                 println("DEBUG - Adding perfume for user: $actualUserId")
+                println("DEBUG - Brand: $brand, Name: $name")
 
                 val perfume = PerfumeCloud(
                     userId = actualUserId,
@@ -95,7 +97,7 @@ class ScentLensViewModel(
                 val result = cloudRepository.addPerfume(perfume)
 
                 if (result.isSuccess) {
-                    println("DEBUG - Successfully added perfume")
+                    println("DEBUG - Successfully added perfume to wardrobe")
                     _state.value = ScentLensState.Idle
                     onComplete()
                 } else {

@@ -11,6 +11,7 @@ import com.atelierversace.utils.PersonalizedGeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 sealed class DiscoveryState {
     object Idle : DiscoveryState()
@@ -62,8 +63,12 @@ class DiscoveryViewModel(
                 _wishlist.value = items
                 _wishlistItems.value = items.map { "${it.brand}|${it.name}" }.toSet()
                 println("DEBUG - Loaded ${items.size} wishlist items")
+                items.forEach {
+                    println("DEBUG - Wishlist item: ${it.brand} | ${it.name} | ID: ${it.id}")
+                }
             } else {
                 println("ERROR - Failed to load wishlist: ${result.exceptionOrNull()?.message}")
+                result.exceptionOrNull()?.printStackTrace()
             }
         }
     }
@@ -128,25 +133,32 @@ class DiscoveryViewModel(
                 println("DEBUG - Currently in wishlist: $isCurrentlyInWishlist")
 
                 if (isCurrentlyInWishlist) {
+                    // Remove from wishlist
                     val existing = _wishlist.value.find {
                         it.brand == profile.brand && it.name == profile.name
                     }
 
                     if (existing != null && existing.id != null) {
                         println("DEBUG - Removing from wishlist, id: ${existing.id}")
+
+                        _wishlistItems.value = currentSet - key
+
                         val result = cloudRepository.deletePerfume(existing.id)
                         if (result.isSuccess) {
-                            _wishlistItems.value = currentSet - key
                             println("DEBUG - Successfully removed from wishlist")
+                            delay(300)
                             loadWishlist(userId)
                         } else {
+                            _wishlistItems.value = currentSet
                             println("ERROR: Failed to remove from wishlist: ${result.exceptionOrNull()?.message}")
+                            result.exceptionOrNull()?.printStackTrace()
                         }
                     } else {
                         println("ERROR: Could not find existing perfume to remove")
                     }
                 } else {
                     println("DEBUG - Adding to wishlist")
+
                     val perfume = PerfumeCloud(
                         userId = userId,
                         brand = profile.brand,
@@ -165,12 +177,15 @@ class DiscoveryViewModel(
 
                     println("DEBUG - Perfume object to add: $perfume")
 
+                    _wishlistItems.value = currentSet + key
+
                     val result = cloudRepository.addPerfume(perfume)
                     if (result.isSuccess) {
-                        _wishlistItems.value = currentSet + key
                         println("DEBUG - Successfully added to wishlist")
+                        delay(300)
                         loadWishlist(userId)
                     } else {
+                        _wishlistItems.value = currentSet
                         println("ERROR: Failed to add to wishlist: ${result.exceptionOrNull()?.message}")
                         result.exceptionOrNull()?.printStackTrace()
                     }
@@ -178,22 +193,37 @@ class DiscoveryViewModel(
             } catch (e: Exception) {
                 e.printStackTrace()
                 println("ERROR: Exception in toggleWishlist: ${e.message}")
+                loadWishlist(userId)
             }
         }
     }
 
     fun removeFromWishlist(perfume: PerfumeCloud) {
         val key = "${perfume.brand}|${perfume.name}"
-        _wishlistItems.value = _wishlistItems.value - key
+
+        val userId = currentUserId ?: authRepository.getCurrentUser()?.id ?: return
+
+        println("DEBUG - removeFromWishlist called for: $key")
 
         viewModelScope.launch {
             try {
+                _wishlistItems.value = _wishlistItems.value - key
+
                 if (perfume.id != null) {
-                    cloudRepository.deletePerfume(perfume.id)
+                    val result = cloudRepository.deletePerfume(perfume.id)
+                    if (result.isSuccess) {
+                        println("DEBUG - Successfully removed from wishlist")
+                        delay(300)
+                        loadWishlist(userId)
+                    } else {
+                        println("ERROR - Failed to remove: ${result.exceptionOrNull()?.message}")
+                        loadWishlist(userId)
+                    }
                 }
-                currentUserId?.let { loadWishlist(it) }
             } catch (e: Exception) {
                 e.printStackTrace()
+                println("ERROR - Exception in removeFromWishlist: ${e.message}")
+                loadWishlist(userId)
             }
         }
     }

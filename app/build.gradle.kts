@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.ksp)
     alias(libs.plugins.compose.compiler)
+    kotlin("plugin.serialization") version "1.9.0"
 }
 
 val localProperties = Properties()
@@ -106,6 +107,8 @@ dependencies {
     implementation(libs.ktor.utils)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
+
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(platform("io.github.jan-tennert.supabase:bom:3.2.6"))
 }
