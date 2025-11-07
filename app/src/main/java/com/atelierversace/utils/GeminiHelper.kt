@@ -1,5 +1,7 @@
 package com.atelierversace.utils
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
 import dev.shreyaspatil.ai.client.generativeai.type.content
 import com.atelierversace.data.model.PersonaProfile
@@ -8,6 +10,8 @@ import org.json.JSONObject
 import org.json.JSONArray
 import com.atelierversace.BuildConfig
 import dev.shreyaspatil.ai.client.generativeai.type.PlatformImage
+import java.io.ByteArrayOutputStream
+import androidx.core.graphics.scale
 
 class GeminiHelper {
 
@@ -55,22 +59,67 @@ class GeminiHelper {
         return cleaned
     }
 
+    private fun optimizeImageForAI(imageBytes: ByteArray): ByteArray {
+        try {
+            val originalBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+            val maxDimension = 2048
+            val scale = if (originalBitmap.width > originalBitmap.height) {
+                maxDimension.toFloat() / originalBitmap.width
+            } else {
+                maxDimension.toFloat() / originalBitmap.height
+            }
+
+            val scaledBitmap = if (scale < 1.0f) {
+                val newWidth = (originalBitmap.width * scale).toInt()
+                val newHeight = (originalBitmap.height * scale).toInt()
+                originalBitmap.scale(newWidth, newHeight)
+            } else {
+                originalBitmap
+            }
+
+            val outputStream = ByteArrayOutputStream()
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+
+            val optimizedBytes = outputStream.toByteArray()
+
+            println("DEBUG - Image optimization: Original=${imageBytes.size} bytes, Optimized=${optimizedBytes.size} bytes")
+
+            return optimizedBytes
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Image optimization failed, using original: ${e.message}")
+            return imageBytes
+        }
+    }
+
     suspend fun identifyPerfume(imageBytes: ByteArray): Pair<String, String>? {
         try {
+            val optimizedBytes = optimizeImageForAI(imageBytes)
+
             val prompt = """
-                Identify this perfume from the image. Look at the bottle, label, and any text visible.
+                Carefully analyze this perfume bottle image. Look at:
+                1. The brand name (usually at the top or prominently displayed)
+                2. The perfume name (usually below the brand)
+                3. Any visible text on the label or bottle
+                4. The bottle design and packaging
+                
+                IMPORTANT: Read the text exactly as it appears. Do not guess or infer.
+                
                 You must respond with ONLY a valid JSON object (no markdown, no code blocks, no explanations).
                 
                 Format:
-                {"brand": "Brand Name", "name": "Perfume Name"}
+                {"brand": "Exact Brand Name", "name": "Exact Perfume Name"}
                 
-                If you cannot identify the perfume clearly:
+                If you cannot clearly read the brand or name:
                 {"brand": "Unknown", "name": "Perfume"}
+                
+                Be precise - only return what you can actually read from the image.
             """.trimIndent()
 
             val response = visionModel.generateContent(
                 content {
-                    PlatformImage(imageBytes)
+                    PlatformImage(optimizedBytes)
                     text(prompt)
                 }
             )

@@ -10,6 +10,7 @@ import com.atelierversace.data.repository.CloudPerfumeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
@@ -32,53 +33,85 @@ class ProfileViewModel(
     private val _favoritesCount = MutableStateFlow(0)
     val favoritesCount: StateFlow<Int> = _favoritesCount
 
+    private var isRefreshing = false
+
     init {
         loadProfile()
         loadPersonalization()
         loadStats()
+        startPeriodicRefresh()
+    }
+
+    private fun startPeriodicRefresh() {
+        viewModelScope.launch {
+            while (true) {
+                delay(3000)
+                if (!isRefreshing) {
+                    loadStats()
+                }
+            }
+        }
     }
 
     private fun loadProfile() {
         viewModelScope.launch {
-            val user = authRepository.getCurrentUser()
-            if (user != null) {
-                val profileResult = authRepository.getUserProfile(user.id)
-                if (profileResult.isSuccess) {
-                    _userProfile.value = profileResult.getOrThrow()
+            try {
+                val user = authRepository.getCurrentUser()
+                if (user != null) {
+                    val profileResult = authRepository.getUserProfile(user.id)
+                    if (profileResult.isSuccess) {
+                        _userProfile.value = profileResult.getOrThrow()
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
     private fun loadPersonalization() {
         viewModelScope.launch {
-            val user = authRepository.getCurrentUser()
-            if (user != null) {
-                val result = aiRepository.getPersonalization(user.id)
-                if (result.isSuccess) {
-                    _personalization.value = result.getOrNull()
+            try {
+                val user = authRepository.getCurrentUser()
+                if (user != null) {
+                    val result = aiRepository.getPersonalization(user.id)
+                    if (result.isSuccess) {
+                        _personalization.value = result.getOrNull()
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
     private fun loadStats() {
         viewModelScope.launch {
-            val user = authRepository.getCurrentUser()
-            if (user != null) {
-                val wardrobeResult = cloudPerfumeRepository.getWardrobe(user.id)
-                val wishlistResult = cloudPerfumeRepository.getWishlist(user.id)
-                val favoritesResult = cloudPerfumeRepository.getFavorites(user.id)
+            try {
+                isRefreshing = true
+                val user = authRepository.getCurrentUser()
+                if (user != null) {
+                    val wardrobeResult = cloudPerfumeRepository.getWardrobe(user.id)
+                    if (wardrobeResult.isSuccess) {
+                        _wardrobeCount.value = wardrobeResult.getOrNull()?.size ?: 0
+                    }
 
-                if (wardrobeResult.isSuccess) {
-                    _wardrobeCount.value = wardrobeResult.getOrNull()?.size ?: 0
+                    val wishlistResult = cloudPerfumeRepository.getWishlist(user.id)
+                    if (wishlistResult.isSuccess) {
+                        _wishlistCount.value = wishlistResult.getOrNull()?.size ?: 0
+                    }
+
+                    val favoritesResult = cloudPerfumeRepository.getFavorites(user.id)
+                    if (favoritesResult.isSuccess) {
+                        _favoritesCount.value = favoritesResult.getOrNull()?.size ?: 0
+                    }
+
+                    println("DEBUG - Profile stats updated: Wardrobe=${_wardrobeCount.value}, Wishlist=${_wishlistCount.value}, Favorites=${_favoritesCount.value}")
                 }
-                if (wishlistResult.isSuccess) {
-                    _wishlistCount.value = wishlistResult.getOrNull()?.size ?: 0
-                }
-                if (favoritesResult.isSuccess) {
-                    _favoritesCount.value = favoritesResult.getOrNull()?.size ?: 0
-                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isRefreshing = false
             }
         }
     }

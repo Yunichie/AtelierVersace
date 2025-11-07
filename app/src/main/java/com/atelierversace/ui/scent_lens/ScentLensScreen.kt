@@ -193,6 +193,7 @@ fun ScentLensScreen(
                                         profile = currentState.profile,
                                         imageUri = currentState.imageUri,
                                         userId = userId,
+                                        context = context,
                                         onComplete = onNavigateToWardrobe
                                     )
                                 }
