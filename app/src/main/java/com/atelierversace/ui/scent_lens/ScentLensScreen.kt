@@ -11,7 +11,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -19,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -30,11 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import coil.compose.AsyncImage
 import com.atelierversace.data.model.PersonaProfile
 import com.atelierversace.ui.components.*
 import com.atelierversace.ui.theme.*
-import java.io.ByteArrayOutputStream
 
 @Composable
 fun ScentLensScreen(
@@ -81,11 +77,8 @@ fun ScentLensScreen(
             capturedBitmap = it
             imageUri = null
 
-            val stream = ByteArrayOutputStream()
-            it.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-            val imageBytes = stream.toByteArray()
-
-            viewModel.analyzePerfume(imageBytes, "captured_image")
+            println("DEBUG - Captured bitmap: ${it.width}x${it.height}")
+            viewModel.analyzePerfume(it, "captured_image")
         }
     }
 
@@ -96,15 +89,21 @@ fun ScentLensScreen(
             imageUri = it
             capturedBitmap = null
 
-            val bitmap = android.graphics.BitmapFactory.decodeStream(
-                context.contentResolver.openInputStream(it)
-            )
-            bitmap?.let { bmp ->
-                val stream = ByteArrayOutputStream()
-                bmp.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-                val imageBytes = stream.toByteArray()
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
 
-                viewModel.analyzePerfume(imageBytes, it.toString())
+                if (bitmap != null) {
+                    println("DEBUG - Gallery bitmap: ${bitmap.width}x${bitmap.height}")
+                    capturedBitmap = bitmap
+                    viewModel.analyzePerfume(bitmap, it.toString())
+                } else {
+                    println("ERROR - Failed to decode bitmap from URI")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("ERROR - Failed to load image: ${e.message}")
             }
         }
     }
@@ -169,7 +168,6 @@ fun ScentLensScreen(
 
                     is ScentLensState.Loading -> {
                         LoadingContent(
-                            imageUri = imageUri,
                             capturedBitmap = capturedBitmap
                         )
                     }
@@ -179,7 +177,6 @@ fun ScentLensScreen(
                             brand = currentState.brand,
                             name = currentState.name,
                             profile = currentState.profile,
-                            imageUri = imageUri,
                             capturedBitmap = capturedBitmap,
                             onAddToWardrobe = {
                                 if (userId.isEmpty()) {
@@ -345,7 +342,6 @@ private fun IdleContent(onCaptureClick: () -> Unit) {
 
 @Composable
 private fun LoadingContent(
-    imageUri: Uri?,
     capturedBitmap: Bitmap?
 ) {
     Column(
@@ -363,23 +359,13 @@ private fun LoadingContent(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
-                when {
-                    capturedBitmap != null -> {
-                        Image(
-                            bitmap = capturedBitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    imageUri != null -> {
-                        AsyncImage(
-                            model = imageUri,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                if (capturedBitmap != null) {
+                    Image(
+                        bitmap = capturedBitmap.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
                 }
 
                 Box(
@@ -411,7 +397,6 @@ private fun SuccessContent(
     brand: String,
     name: String,
     profile: PersonaProfile,
-    imageUri: Uri?,
     capturedBitmap: Bitmap?,
     onAddToWardrobe: () -> Unit,
     onScanAnother: () -> Unit
@@ -426,23 +411,13 @@ private fun SuccessContent(
             backgroundColor = Color.White.copy(alpha = 0.25f),
             borderColor = Color.White.copy(alpha = 0.4f)
         ) {
-            when {
-                capturedBitmap != null -> {
-                    Image(
-                        bitmap = capturedBitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                imageUri != null -> {
-                    AsyncImage(
-                        model = imageUri,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+            if (capturedBitmap != null) {
+                Image(
+                    bitmap = capturedBitmap.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
             }
         }
 

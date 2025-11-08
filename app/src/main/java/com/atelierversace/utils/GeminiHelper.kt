@@ -1,28 +1,38 @@
 package com.atelierversace.utils
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
-import dev.shreyaspatil.ai.client.generativeai.type.content
+import com.google.firebase.ai.type.content
+import com.google.firebase.ai.type.generationConfig
 import com.atelierversace.data.model.PersonaProfile
 import com.atelierversace.data.model.Perfume
 import org.json.JSONObject
 import org.json.JSONArray
 import com.atelierversace.BuildConfig
-import dev.shreyaspatil.ai.client.generativeai.type.PlatformImage
-import java.io.ByteArrayOutputStream
 import androidx.core.graphics.scale
+import com.google.firebase.Firebase
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.GenerativeBackend
 
 class GeminiHelper {
 
-    private val visionModel = GenerativeModel(
-        modelName = "gemini-2.5-flash",
-        apiKey = BuildConfig.GEMINI_KEY
+    private val visionModel = Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
+        modelName = "gemini-2.0-flash",
+        generationConfig = generationConfig {
+            temperature = 0.4f
+            topK = 32
+            topP = 1f
+            maxOutputTokens = 8192
+        }
     )
 
-    private val textModel = GenerativeModel(
-        modelName = "gemini-2.5-flash",
-        apiKey = BuildConfig.GEMINI_KEY
+    private val textModel = Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
+        modelName = "gemini-2.0-flash",
+        generationConfig = generationConfig {
+            temperature = 0.7f
+            topK = 40
+            topP = 0.95f
+            maxOutputTokens = 8192
+        }
     )
 
     private fun cleanJsonResponse(response: String): String {
@@ -59,10 +69,8 @@ class GeminiHelper {
         return cleaned
     }
 
-    private fun optimizeImageForAI(imageBytes: ByteArray): ByteArray {
+    private fun optimizeImageForAI(originalBitmap: Bitmap): Bitmap {
         try {
-            val originalBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-
             val maxDimension = 2048
             val scale = if (originalBitmap.width > originalBitmap.height) {
                 maxDimension.toFloat() / originalBitmap.width
@@ -78,53 +86,57 @@ class GeminiHelper {
                 originalBitmap
             }
 
-            val outputStream = ByteArrayOutputStream()
-            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 95, outputStream)
+            println("DEBUG - Image optimization: Original=${originalBitmap.width}x${originalBitmap.height}, Scaled=${scaledBitmap.width}x${scaledBitmap.height}")
 
-            val optimizedBytes = outputStream.toByteArray()
-
-            println("DEBUG - Image optimization: Original=${imageBytes.size} bytes, Optimized=${optimizedBytes.size} bytes")
-
-            return optimizedBytes
+            return scaledBitmap
         } catch (e: Exception) {
             e.printStackTrace()
-            println("ERROR - Image optimization failed, using original: ${e.message}")
-            return imageBytes
+            println("ERROR - Image optimization failed: ${e.message}")
+            throw e
         }
     }
 
-    suspend fun identifyPerfume(imageBytes: ByteArray): Pair<String, String>? {
+    suspend fun identifyPerfume(imageBitmap: Bitmap): Pair<String, String>? {
         try {
-            val optimizedBytes = optimizeImageForAI(imageBytes)
+            val optimizedBitmap = optimizeImageForAI(imageBitmap)
 
             val prompt = """
-                Carefully analyze this perfume bottle image. Look at:
-                1. The brand name (usually at the top or prominently displayed)
-                2. The perfume name (usually below the brand)
-                3. Any visible text on the label or bottle
-                4. The bottle design and packaging
+                You are a perfume identification expert. Analyze this perfume bottle image with extreme precision.
                 
-                IMPORTANT: Read the text exactly as it appears. Do not guess or infer.
+                INSTRUCTIONS:
+                1. Look carefully at ALL text on the bottle, label, and packaging
+                2. The BRAND NAME is usually at the top or most prominent
+                3. The PERFUME NAME is typically below the brand or on the main label
+                4. Read EXACTLY what you see - do not guess or infer
+                5. If you cannot clearly read the text, respond with "Unknown" for that field
                 
-                You must respond with ONLY a valid JSON object (no markdown, no code blocks, no explanations).
+                IMPORTANT RULES:
+                - Only return text you can actually READ from the image
+                - Do not make assumptions about the perfume based on bottle shape
+                - Be conservative - if unsure, use "Unknown"
                 
-                Format:
-                {"brand": "Exact Brand Name", "name": "Exact Perfume Name"}
+                Return ONLY a JSON object with this exact format (no markdown, no explanation):
+                {
+                    "brand": "Exact Brand Name As Written",
+                    "name": "Exact Perfume Name As Written"
+                }
                 
-                If you cannot clearly read the brand or name:
-                {"brand": "Unknown", "name": "Perfume"}
-                
-                Be precise - only return what you can actually read from the image.
+                If you cannot read either field clearly, respond with:
+                {
+                    "brand": "Unknown",
+                    "name": "Perfume"
+                }
             """.trimIndent()
 
             val response = visionModel.generateContent(
                 content {
-                    PlatformImage(optimizedBytes)
+                    image(optimizedBitmap)
                     text(prompt)
                 }
             )
 
-            val jsonText = cleanJsonResponse(response.text ?: return null)
+            val responseText = response.text ?: return null
+            val jsonText = cleanJsonResponse(responseText)
             println("DEBUG - Identify response: $jsonText")
 
             val json = JSONObject(jsonText)
@@ -133,6 +145,12 @@ class GeminiHelper {
             val name = json.getString("name")
 
             println("DEBUG - Identified perfume: $brand - $name")
+
+            if (brand == "Unknown" && name == "Perfume") {
+                println("WARNING - Could not identify perfume from image")
+                return null
+            }
+
             return Pair(brand, name)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -144,20 +162,32 @@ class GeminiHelper {
     suspend fun generatePersonaProfile(brand: String, name: String): PersonaProfile {
         try {
             val prompt = """
-                Create a detailed persona profile for: $brand $name
+                You are a fragrance expert with access to comprehensive perfume databases. Create an accurate, detailed persona profile for:
                 
-                Context: Surabaya, Indonesia (tropical, humid climate, 28-32°C average).
+                PERFUME: $brand $name
+                LOCATION CONTEXT: Surabaya, Indonesia (tropical climate, 28-32°C average, 70-80% humidity)
                 
-                Search for actual information about this perfume using Google Search.
-                Provide accurate notes and descriptions based on real data.
+                REQUIREMENTS:
+                1. Research this SPECIFIC perfume - use exact note information if available
+                2. If this is a well-known perfume, provide ACCURATE notes based on real data
+                3. Create an evocative analogy that captures the essence
+                4. Describe the core feeling in 2-3 words
+                5. Provide context specifically for Surabaya's tropical, humid climate
+                6. List 3-4 notes for each layer (top, middle, base)
                 
-                Respond with ONLY valid JSON (no markdown, no code blocks):
+                QUALITY STANDARDS:
+                - Accuracy is critical - if you know the perfume, use real information
+                - The analogy should be vivid and memorable
+                - Local context must address tropical humidity and heat
+                - Notes should be specific and realistic
+                
+                Return ONLY a JSON object (no markdown, no explanation):
                 {
                     "brand": "$brand",
                     "name": "$name",
-                    "analogy": "A vivid, evocative comparison (e.g., 'Like walking through a rain-soaked garden at dawn')",
-                    "coreFeeling": "2-3 words describing the essence (e.g., 'Fresh & Invigorating')",
-                    "localContext": "Specific advice for Surabaya's climate (e.g., 'Best for evening wear in air-conditioned spaces')",
+                    "analogy": "A vivid, sensory-rich comparison (e.g., 'Like walking through a rain-soaked jasmine garden at twilight')",
+                    "coreFeeling": "2-3 descriptive words (e.g., 'Fresh & Luminous')",
+                    "localContext": "Specific advice for Surabaya's tropical climate (e.g., 'Best worn in air-conditioned spaces; the citrus notes shine in humidity')",
                     "topNotes": ["Note1", "Note2", "Note3"],
                     "middleNotes": ["Note1", "Note2", "Note3"],
                     "baseNotes": ["Note1", "Note2", "Note3"]
@@ -165,7 +195,8 @@ class GeminiHelper {
             """.trimIndent()
 
             val response = textModel.generateContent(prompt)
-            val jsonText = cleanJsonResponse(response.text ?: throw Exception("Empty response"))
+            val responseText = response.text ?: throw Exception("Empty response")
+            val jsonText = cleanJsonResponse(responseText)
 
             println("DEBUG - Persona profile response: $jsonText")
 
@@ -194,12 +225,12 @@ class GeminiHelper {
             return PersonaProfile(
                 brand = brand,
                 name = name,
-                analogy = "A sophisticated and versatile fragrance",
+                analogy = "A sophisticated and versatile fragrance that adapts to your presence",
                 coreFeeling = "Elegant & Refined",
-                localContext = "Suitable for various occasions in Surabaya's climate",
-                topNotes = listOf("Citrus", "Bergamot", "Fresh"),
-                middleNotes = listOf("Floral", "Jasmine", "Rose"),
-                baseNotes = listOf("Woody", "Musk", "Amber")
+                localContext = "Suitable for various occasions in Surabaya's tropical climate. Best worn during cooler evening hours or in air-conditioned environments.",
+                topNotes = listOf("Citrus", "Bergamot", "Fresh Accord"),
+                middleNotes = listOf("Jasmine", "Rose", "Floral Heart"),
+                baseNotes = listOf("Musk", "Cedarwood", "Amber")
             )
         }
     }
@@ -207,20 +238,34 @@ class GeminiHelper {
     suspend fun discoverPerfumes(query: String): List<PersonaProfile> {
         try {
             val prompt = """
-                Based on: "$query"
+                You are a perfume recommendation expert. Based on this user query, recommend 4-5 REAL, commercially available perfumes.
                 
-                Use Google Search to find 3-5 real perfumes that match this description.
-                Include actual brand names, perfume names, and accurate note information.
-                Focus on popular, available perfumes that fit the query.
+                USER QUERY: "$query"
+                LOCATION: Surabaya, Indonesia (tropical, 28-32°C, humid)
                 
-                Respond with ONLY valid JSON array (no markdown, no code blocks):
+                REQUIREMENTS:
+                1. Recommend REAL perfumes with accurate brand and product names
+                2. Choose perfumes that match the query description
+                3. Include accurate note information (research if you know the perfume)
+                4. Consider tropical climate suitability
+                5. Mix popular and niche options
+                6. Ensure diversity in recommendations
+                
+                QUALITY STANDARDS:
+                - Only recommend perfumes that actually exist
+                - Use accurate brand names (e.g., "Chanel", "Dior", "Jo Malone", "Tom Ford")
+                - Provide real perfume names (e.g., "Sauvage", "Bloom", "Wood Sage & Sea Salt")
+                - Notes should be accurate if you know the perfume
+                - Consider climate appropriateness (avoid heavy/cloying scents)
+                
+                Return ONLY a JSON array (no markdown, no explanation):
                 [
                     {
-                        "brand": "Actual Brand",
-                        "name": "Actual Perfume Name",
-                        "analogy": "Vivid comparison",
-                        "coreFeeling": "Feeling words",
-                        "localContext": "Suitability for Surabaya (tropical, humid)",
+                        "brand": "Real Brand Name",
+                        "name": "Real Perfume Name",
+                        "analogy": "Vivid, sensory comparison",
+                        "coreFeeling": "2-3 feeling words",
+                        "localContext": "Specific advice for tropical Surabaya climate",
                         "topNotes": ["Note1", "Note2", "Note3"],
                         "middleNotes": ["Note1", "Note2", "Note3"],
                         "baseNotes": ["Note1", "Note2", "Note3"]
@@ -229,7 +274,8 @@ class GeminiHelper {
             """.trimIndent()
 
             val response = textModel.generateContent(prompt)
-            val jsonText = cleanJsonResponse(response.text ?: return emptyList())
+            val responseText = response.text ?: return emptyList()
+            val jsonText = cleanJsonResponse(responseText)
 
             println("DEBUG - Discovery response: $jsonText")
 
@@ -280,29 +326,50 @@ class GeminiHelper {
         if (perfumes.isEmpty()) return null
 
         try {
-            val perfumeList = perfumes.joinToString("\n") {
-                "${it.id}. ${it.brand} ${it.name} - ${it.analogy} (${it.coreFeeling})"
+            val perfumeList = perfumes.joinToString("\n") { perfume ->
+                """
+                ID: ${perfume.id}
+                ${perfume.brand} ${perfume.name}
+                Analogy: ${perfume.analogy}
+                Feeling: ${perfume.coreFeeling}
+                Context: ${perfume.localContext}
+                Top: ${perfume.topNotes}
+                Middle: ${perfume.middleNotes}
+                Base: ${perfume.baseNotes}
+                ---
+                """.trimIndent()
             }
 
             val prompt = """
-                Recommend ONE perfume from this list:
+                You are a personal fragrance consultant. Recommend ONE perfume from this wardrobe that best fits the context.
                 
+                AVAILABLE PERFUMES:
                 $perfumeList
                 
-                Context:
+                CURRENT CONTEXT:
                 - Weather: ${weather.temperature}°C, ${weather.humidity}% humidity, ${weather.description}
                 - Occasion: $occasion
-                - Location: Surabaya, Indonesia
+                - Location: Surabaya, Indonesia (tropical)
                 
-                Respond with ONLY valid JSON (no markdown, no code blocks):
+                RECOMMENDATION CRITERIA:
+                1. Weather appropriateness (consider temperature and humidity)
+                2. Occasion suitability
+                3. Note performance in tropical climate
+                4. Overall harmony with context
+                
+                Return ONLY a JSON object (no markdown, no explanation):
                 {
                     "perfumeId": <numeric id>,
-                    "reason": "Brief explanation mentioning weather and occasion"
+                    "reason": "2-3 sentences explaining why this perfume is perfect for the weather and occasion, mentioning specific notes or characteristics"
                 }
             """.trimIndent()
 
             val response = textModel.generateContent(prompt)
-            val jsonText = cleanJsonResponse(response.text ?: return null)
+            val responseText = response.text ?: return null
+            val jsonText = cleanJsonResponse(responseText)
+
+            println("DEBUG - Recommendation response: $jsonText")
+
             val json = JSONObject(jsonText)
 
             val perfumeId = json.getInt("perfumeId")
@@ -313,8 +380,10 @@ class GeminiHelper {
             return selectedPerfume?.let { it to reason }
         } catch (e: Exception) {
             e.printStackTrace()
+            println("ERROR in recommendation: ${e.message}")
+
             return perfumes.firstOrNull()?.let {
-                it to "A great choice for today!"
+                it to "A versatile choice that works well for today's conditions."
             }
         }
     }
@@ -327,31 +396,54 @@ class GeminiHelper {
         if (perfumes.isEmpty()) return null
 
         try {
-            val perfumeList = perfumes.joinToString("\n") {
-                "${it.id}. ${it.brand} ${it.name} - ${it.analogy} (${it.coreFeeling}) [${it.localContext}]"
+            val perfumeList = perfumes.joinToString("\n") { perfume ->
+                """
+                ID: ${perfume.id}
+                ${perfume.brand} ${perfume.name}
+                Analogy: ${perfume.analogy}
+                Feeling: ${perfume.coreFeeling}
+                Context: ${perfume.localContext}
+                Top: ${perfume.topNotes}
+                Middle: ${perfume.middleNotes}
+                Base: ${perfume.baseNotes}
+                ---
+                """.trimIndent()
             }
 
             val prompt = """
-                User request: "$userQuery"
+                You are a personal fragrance consultant. The user has a specific request.
                 
-                Available perfumes:
+                USER REQUEST: "$userQuery"
+                
+                AVAILABLE PERFUMES:
                 $perfumeList
                 
-                Context:
+                CURRENT CONTEXT:
                 - Weather: ${weather.temperature}°C, ${weather.humidity}% humidity, ${weather.description}
-                - Location: Surabaya, Indonesia (tropical)
+                - Location: Surabaya, Indonesia (tropical climate)
                 
-                Recommend ONE perfume that best matches the request and weather.
+                TASK:
+                Recommend ONE perfume that best matches the user's request while considering the weather.
                 
-                Respond with ONLY valid JSON (no markdown, no code blocks):
+                CRITERIA:
+                1. Match the user's described mood/occasion
+                2. Consider weather appropriateness
+                3. Explain how the perfume fulfills their request
+                4. Mention specific notes that align with their needs
+                
+                Return ONLY a JSON object (no markdown, no explanation):
                 {
                     "perfumeId": <numeric id>,
-                    "reason": "2-3 sentences explaining the match"
+                    "reason": "3-4 sentences explaining how this perfume matches their request and the current conditions"
                 }
             """.trimIndent()
 
             val response = textModel.generateContent(prompt)
-            val jsonText = cleanJsonResponse(response.text ?: return null)
+            val responseText = response.text ?: return null
+            val jsonText = cleanJsonResponse(responseText)
+
+            println("DEBUG - Query recommendation response: $jsonText")
+
             val json = JSONObject(jsonText)
 
             val perfumeId = json.getInt("perfumeId")
@@ -362,6 +454,7 @@ class GeminiHelper {
             return selectedPerfume?.let { it to reason }
         } catch (e: Exception) {
             e.printStackTrace()
+            println("ERROR in query recommendation: ${e.message}")
             return null
         }
     }

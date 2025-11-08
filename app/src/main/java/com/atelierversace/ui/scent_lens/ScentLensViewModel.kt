@@ -2,7 +2,6 @@ package com.atelierversace.ui.scent_lens
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.atelierversace.data.remote.PerfumeCloud
@@ -41,23 +40,27 @@ class ScentLensViewModel(
     private val _state = MutableStateFlow<ScentLensState>(ScentLensState.Idle)
     val state: StateFlow<ScentLensState> = _state
 
-    private var capturedImageBytes: ByteArray? = null
+    private var capturedBitmap: Bitmap? = null
 
-    fun analyzePerfume(imageBytes: ByteArray, imageUri: String) {
+    fun analyzePerfume(imageBitmap: Bitmap, imageUri: String) {
         viewModelScope.launch {
             _state.value = ScentLensState.Loading
 
             try {
-                capturedImageBytes = imageBytes
+                capturedBitmap = imageBitmap
 
-                val identification = geminiHelper.identifyPerfume(imageBytes)
+                println("DEBUG - Analyzing perfume with bitmap: ${imageBitmap.width}x${imageBitmap.height}")
+
+                val identification = geminiHelper.identifyPerfume(imageBitmap)
 
                 if (identification == null) {
-                    _state.value = ScentLensState.Error("Could not identify perfume. Please try again.")
+                    _state.value = ScentLensState.Error("Could not identify perfume. Please ensure the label is clearly visible and try again.")
                     return@launch
                 }
 
                 val (brand, name) = identification
+                println("DEBUG - Identified: $brand - $name")
+
                 val profile = geminiHelper.generatePersonaProfile(brand, name)
 
                 _state.value = ScentLensState.Success(brand, name, profile, imageUri)
@@ -92,6 +95,12 @@ class ScentLensViewModel(
 
                 val persistentImageUri = saveImageToInternalStorage(context, actualUserId)
 
+                if (persistentImageUri.isEmpty()) {
+                    println("ERROR - Failed to save image")
+                    _state.value = ScentLensState.Error("Failed to save image")
+                    return@launch
+                }
+
                 println("DEBUG - Persistent image URI: $persistentImageUri")
 
                 val perfume = PerfumeCloud(
@@ -116,7 +125,8 @@ class ScentLensViewModel(
 
                 if (result.isSuccess) {
                     println("DEBUG - Successfully added perfume to wardrobe")
-                    capturedImageBytes = null
+
+                    capturedBitmap = null
 
                     updateAIPersonalization(actualUserId)
 
@@ -167,7 +177,7 @@ class ScentLensViewModel(
 
     private fun saveImageToInternalStorage(context: Context, userId: String): String {
         try {
-            val imageBytes = capturedImageBytes ?: return ""
+            val bitmap = capturedBitmap ?: return ""
 
             val userDir = File(context.filesDir, "perfume_images/$userId")
             if (!userDir.exists()) {
@@ -176,8 +186,6 @@ class ScentLensViewModel(
 
             val filename = "perfume_${UUID.randomUUID()}.jpg"
             val imageFile = File(userDir, filename)
-
-            val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 
             FileOutputStream(imageFile).use { outputStream ->
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
@@ -195,6 +203,6 @@ class ScentLensViewModel(
 
     fun reset() {
         _state.value = ScentLensState.Idle
-        capturedImageBytes = null
+        capturedBitmap = null
     }
 }
