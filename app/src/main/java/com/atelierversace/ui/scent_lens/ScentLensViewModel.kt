@@ -9,6 +9,7 @@ import com.atelierversace.data.remote.PerfumeCloud
 import com.atelierversace.data.model.PersonaProfile
 import com.atelierversace.data.repository.CloudPerfumeRepository
 import com.atelierversace.data.repository.AuthRepository
+import com.atelierversace.data.repository.AIPersonalizationRepository
 import com.atelierversace.utils.GeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,8 @@ class ScentLensViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
+    private val aiRepository = AIPersonalizationRepository()
+
     private val _state = MutableStateFlow<ScentLensState>(ScentLensState.Idle)
     val state: StateFlow<ScentLensState> = _state
 
@@ -45,7 +48,6 @@ class ScentLensViewModel(
             _state.value = ScentLensState.Loading
 
             try {
-                // Store image bytes for later use
                 capturedImageBytes = imageBytes
 
                 val identification = geminiHelper.identifyPerfume(imageBytes)
@@ -114,7 +116,10 @@ class ScentLensViewModel(
 
                 if (result.isSuccess) {
                     println("DEBUG - Successfully added perfume to wardrobe")
-                    capturedImageBytes = null // Clear stored bytes
+                    capturedImageBytes = null
+
+                    updateAIPersonalization(actualUserId)
+
                     _state.value = ScentLensState.Idle
                     onComplete()
                 } else {
@@ -130,6 +135,33 @@ class ScentLensViewModel(
                 println("ERROR - Exception in addToWardrobe: ${e.message}")
                 _state.value = ScentLensState.Error(e.message ?: "Failed to add perfume")
             }
+        }
+    }
+
+    private suspend fun updateAIPersonalization(userId: String) {
+        try {
+            println("DEBUG - Updating AI personalization after adding to wardrobe")
+
+            val wardrobeResult = cloudRepository.getWardrobe(userId)
+            if (wardrobeResult.isSuccess) {
+                val perfumes = wardrobeResult.getOrNull() ?: emptyList()
+
+                if (perfumes.isNotEmpty()) {
+                    val newPersonalization = aiRepository.analyzeUserPreferences(userId, perfumes)
+
+                    val saveResult = aiRepository.updatePersonalization(newPersonalization)
+                    if (saveResult.isSuccess) {
+                        println("DEBUG - AI personalization updated successfully")
+                    } else {
+                        println("ERROR - Failed to save AI personalization: ${saveResult.exceptionOrNull()?.message}")
+                    }
+                } else {
+                    println("DEBUG - Wardrobe empty, skipping AI personalization update")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Failed to update AI personalization: ${e.message}")
         }
     }
 

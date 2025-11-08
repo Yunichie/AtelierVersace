@@ -31,7 +31,7 @@ import com.atelierversace.ui.theme.*
 fun WardrobeScreen(viewModel: WardrobeViewModel) {
     val wardrobe by viewModel.wardrobe.collectAsState()
     val recommendationState by viewModel.recommendationState.collectAsState()
-    val favorites by viewModel.favorites.collectAsState()
+    val favoriteIds by viewModel.favoriteIds.collectAsState() // Changed from favorites
 
     var selectedPerfume by remember { mutableStateOf<PerfumeCloud?>(null) }
     var showRecommendationDialog by remember { mutableStateOf(false) }
@@ -45,6 +45,10 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
         if (userId.isNotEmpty()) {
             viewModel.initialize(userId)
         }
+    }
+
+    LaunchedEffect(favoriteIds) {
+        println("DEBUG - WardrobeScreen favoriteIds updated: $favoriteIds")
     }
 
     Box(
@@ -129,11 +133,14 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(wardrobe) { perfume ->
+                    items(wardrobe, key = { it.id ?: it.name }) { perfume ->
+                        val isFavorite = favoriteIds.contains(perfume.id ?: "")
+
                         PerfumeCard(
                             perfume = perfume,
-                            isFavorite = viewModel.isFavorite(perfume.id ?: ""),
+                            isFavorite = isFavorite,
                             onToggleFavorite = {
+                                println("DEBUG - PerfumeCard onToggleFavorite clicked for: ${perfume.id}")
                                 viewModel.toggleFavorite(perfume.id ?: "")
                             },
                             onClick = { selectedPerfume = perfume }
@@ -149,11 +156,17 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
     }
 
     selectedPerfume?.let { perfume ->
+        val isFavorite = favoriteIds.contains(perfume.id ?: "")
+
         PerfumeDetailDialog(
             perfume = perfume,
-            isFavorite = viewModel.isFavorite(perfume.id ?: ""),
+            isFavorite = isFavorite,
             onToggleFavorite = {
+                println("DEBUG - DetailDialog onToggleFavorite clicked for: ${perfume.id}")
                 viewModel.toggleFavorite(perfume.id ?: "")
+            },
+            onDelete = {
+                viewModel.deletePerfume(perfume.id ?: "")
             },
             onDismiss = { selectedPerfume = null }
         )
@@ -234,6 +247,10 @@ private fun PerfumeCard(
     onToggleFavorite: () -> Unit,
     onClick: () -> Unit
 ) {
+    LaunchedEffect(isFavorite) {
+        println("DEBUG - PerfumeCard ${perfume.id} isFavorite: $isFavorite")
+    }
+
     GlassCard(
         onClick = onClick,
         modifier = Modifier
@@ -285,7 +302,10 @@ private fun PerfumeCard(
                         .padding(8.dp)
                 ) {
                     Surface(
-                        onClick = onToggleFavorite,
+                        onClick = {
+                            println("DEBUG - Heart icon clicked for ${perfume.id}, current state: $isFavorite")
+                            onToggleFavorite()
+                        },
                         shape = CircleShape,
                         color = Color.White.copy(alpha = 0.9f),
                         modifier = Modifier.size(36.dp)
@@ -296,7 +316,7 @@ private fun PerfumeCard(
                         ) {
                             Icon(
                                 imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = null,
+                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                                 tint = if (isFavorite) Taupe else TextSecondary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -334,91 +354,173 @@ private fun PerfumeDetailDialog(
     perfume: PerfumeCloud,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
+    onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.4f)),
-        contentAlignment = Alignment.Center
-    ) {
-        GlassCard(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
-            backgroundColor = Color.White.copy(alpha = 0.95f),
-            borderColor = Color.White.copy(alpha = 0.6f),
-            cornerRadius = 24.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            perfume.brand,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = SkyBlue,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            perfume.name,
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = TextPrimary
-                        )
-                    }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        IconButton(
-                            onClick = onToggleFavorite,
-                            modifier = Modifier.size(40.dp)
+    if (showDeleteConfirmation) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f)),
+            contentAlignment = Alignment.Center
+        ) {
+            GlassCard(
+                modifier = Modifier.padding(32.dp),
+                backgroundColor = Color.White.copy(alpha = 0.95f),
+                borderColor = Color.White.copy(alpha = 0.6f),
+                cornerRadius = 24.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        "Delete Perfume?",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
+
+                    Text(
+                        "Are you sure you want to remove ${perfume.brand} ${perfume.name} from your wardrobe?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedGlassButton(
+                            onClick = { showDeleteConfirmation = false },
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = null,
-                                tint = if (isFavorite) Taupe else TextSecondary
-                            )
+                            Text("Cancel", color = TextSecondary)
                         }
 
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier.size(40.dp)
+                        GlassButton(
+                            onClick = {
+                                showDeleteConfirmation = false
+                                onDelete()
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f),
+                            gradient = Brush.horizontalGradient(
+                                colors = listOf(Taupe, Taupe.copy(alpha = 0.8f))
+                            )
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Close,
+                                imageVector = Icons.Default.Delete,
                                 contentDescription = null,
-                                tint = TextSecondary
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Delete", color = Color.White)
                         }
                     }
                 }
+            }
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f)),
+            contentAlignment = Alignment.Center
+        ) {
+            GlassCard(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                backgroundColor = Color.White.copy(alpha = 0.95f),
+                borderColor = Color.White.copy(alpha = 0.6f),
+                cornerRadius = 24.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                perfume.brand,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = SkyBlue,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                perfume.name,
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                color = TextPrimary
+                            )
+                        }
 
-                Spacer(modifier = Modifier.height(20.dp))
-                GlassDivider()
-                Spacer(modifier = Modifier.height(20.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            IconButton(
+                                onClick = onToggleFavorite,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Toggle Favorite",
+                                    tint = if (isFavorite) Taupe else TextSecondary
+                                )
+                            }
 
-                DetailSection("Analogy", perfume.analogy)
-                Spacer(modifier = Modifier.height(16.dp))
+                            IconButton(
+                                onClick = { showDeleteConfirmation = true },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = Taupe
+                                )
+                            }
 
-                DetailSection("Core Feeling", perfume.coreFeeling)
-                Spacer(modifier = Modifier.height(16.dp))
+                            IconButton(
+                                onClick = onDismiss,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = TextSecondary
+                                )
+                            }
+                        }
+                    }
 
-                DetailSection("Local Context", perfume.localContext)
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+                    GlassDivider()
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, SkyBlue)
-                    NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, LightPeriwinkle)
-                    NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Taupe)
+                    DetailSection("Analogy", perfume.analogy)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    DetailSection("Core Feeling", perfume.coreFeeling)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    DetailSection("Local Context", perfume.localContext)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, SkyBlue)
+                        NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, LightPeriwinkle)
+                        NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Taupe)
+                    }
                 }
             }
         }

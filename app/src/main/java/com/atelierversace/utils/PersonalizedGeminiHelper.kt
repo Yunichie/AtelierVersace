@@ -7,6 +7,14 @@ import com.atelierversace.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 
+data class PreferenceAnalysis(
+    val preferredBrands: List<String>,
+    val preferredNotes: List<String>,
+    val commonOccasions: Map<String, Int>,
+    val styleProfile: String,
+    val intensityPreference: String
+)
+
 class PersonalizedGeminiHelper {
     private val textModel = GenerativeModel(
         modelName = "gemini-2.5-flash",
@@ -45,6 +53,84 @@ class PersonalizedGeminiHelper {
         }
 
         return cleaned
+    }
+
+    suspend fun analyzeUserPreferences(perfumes: List<PerfumeCloud>): PreferenceAnalysis {
+        try {
+            val perfumeData = perfumes.joinToString("\n") {
+                """
+                Brand: ${it.brand}
+                Name: ${it.name}
+                Analogy: ${it.analogy}
+                Feeling: ${it.coreFeeling}
+                Context: ${it.localContext}
+                Top: ${it.topNotes}
+                Middle: ${it.middleNotes}
+                Base: ${it.baseNotes}
+                ---
+                """.trimIndent()
+            }
+
+            val prompt = """
+                Analyze this perfume collection and extract user preferences.
+                
+                COLLECTION:
+                $perfumeData
+                
+                Based on the collection, determine:
+                1. Top 5 preferred brands (by frequency and quality)
+                2. Top 10 preferred notes (considering all note layers)
+                3. Style profile (Fresh, Floral, Woody, Oriental, Fruity, Spicy, Aquatic, Gourmand, or combination)
+                4. Intensity preference (Light, Moderate, Strong)
+                5. Common occasions/contexts mentioned
+                
+                Respond with ONLY valid JSON (no markdown, no code blocks):
+                {
+                    "preferredBrands": ["Brand1", "Brand2", "Brand3", "Brand4", "Brand5"],
+                    "preferredNotes": ["Note1", "Note2", "Note3", "Note4", "Note5", "Note6", "Note7", "Note8", "Note9", "Note10"],
+                    "styleProfile": "Style or combination",
+                    "intensityPreference": "Light/Moderate/Strong",
+                    "commonOccasions": {
+                        "casual": 5,
+                        "formal": 3,
+                        "evening": 2
+                    }
+                }
+            """.trimIndent()
+
+            val response = textModel.generateContent(prompt)
+            val jsonText = cleanJsonResponse(response.text ?: throw Exception("Empty response"))
+
+            println("DEBUG - Preference analysis response: $jsonText")
+
+            val json = JSONObject(jsonText)
+
+            val occasions = mutableMapOf<String, Int>()
+            val occasionsJson = json.optJSONObject("commonOccasions")
+            if (occasionsJson != null) {
+                val keys = occasionsJson.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    occasions[key] = occasionsJson.getInt(key)
+                }
+            }
+
+            return PreferenceAnalysis(
+                preferredBrands = json.getJSONArray("preferredBrands").let { array ->
+                    (0 until array.length()).map { array.getString(it) }
+                },
+                preferredNotes = json.getJSONArray("preferredNotes").let { array ->
+                    (0 until array.length()).map { array.getString(it) }
+                },
+                commonOccasions = occasions,
+                styleProfile = json.getString("styleProfile"),
+                intensityPreference = json.getString("intensityPreference")
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR in AI preference analysis: ${e.message}")
+            throw e
+        }
     }
 
     suspend fun generatePersonalizedRecommendation(

@@ -1,12 +1,14 @@
 package com.atelierversace.data.repository
 
 import com.atelierversace.data.remote.*
+import com.atelierversace.utils.PersonalizedGeminiHelper
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 class AIPersonalizationRepository {
     private val client = SupabaseClient.client
+    private val geminiHelper = PersonalizedGeminiHelper()
 
     suspend fun getPersonalization(userId: String): Result<AIPersonalization?> {
         return try {
@@ -131,54 +133,57 @@ class AIPersonalizationRepository {
         userId: String,
         perfumes: List<PerfumeCloud>
     ): AIPersonalization {
-        println("DEBUG - Analyzing user preferences for ${perfumes.size} perfumes")
+        println("DEBUG - Analyzing user preferences with AI for ${perfumes.size} perfumes")
 
-        val brands = perfumes.map { it.brand }.distinct()
-        val brandFrequency = brands.groupingBy { it }.eachCount()
-        val preferredBrands = brandFrequency.entries
-            .sortedByDescending { it.value }
-            .take(5)
-            .map { it.key }
+        return try {
+            val analysis = geminiHelper.analyzeUserPreferences(perfumes)
 
-        val allNotes = perfumes.flatMap { perfume ->
-            listOf(
-                perfume.topNotes.split(","),
-                perfume.middleNotes.split(","),
-                perfume.baseNotes.split(",")
-            ).flatten().map { it.trim() }.filter { it.isNotEmpty() }
-        }
-        val noteFrequency = allNotes.groupingBy { it }.eachCount()
-        val preferredNotes = noteFrequency.entries
-            .sortedByDescending { it.value }
-            .take(10)
-            .map { it.key }
+            println("DEBUG - AI Analysis complete: Style=${analysis.styleProfile}, Brands=${analysis.preferredBrands.size}, Notes=${analysis.preferredNotes.size}")
 
-        val styleKeywords = mapOf(
-            "Fresh" to listOf("citrus", "bergamot", "lemon", "orange", "mint", "aquatic"),
-            "Floral" to listOf("rose", "jasmine", "lily", "violet", "peony", "iris"),
-            "Woody" to listOf("sandalwood", "cedar", "vetiver", "patchouli", "oak"),
-            "Oriental" to listOf("vanilla", "amber", "musk", "incense", "spice"),
-            "Fruity" to listOf("apple", "peach", "berry", "pear", "plum")
-        )
+            AIPersonalization(
+                userId = userId,
+                preferredBrands = analysis.preferredBrands,
+                preferredNotes = analysis.preferredNotes,
+                commonOccasions = analysis.commonOccasions,
+                styleProfile = analysis.styleProfile,
+                intensityPreference = analysis.intensityPreference,
+                lastUpdated = System.currentTimeMillis().toString()
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - AI analysis failed, falling back to basic analysis: ${e.message}")
 
-        val styleScores = styleKeywords.mapValues { (_, keywords) ->
-            allNotes.count { note ->
-                keywords.any { keyword -> note.contains(keyword, ignoreCase = true) }
+            // Fallback to basic frequency analysis
+            val brands = perfumes.map { it.brand }.distinct()
+            val brandFrequency = brands.groupingBy { it }.eachCount()
+            val preferredBrands = brandFrequency.entries
+                .sortedByDescending { it.value }
+                .take(5)
+                .map { it.key }
+
+            val allNotes = perfumes.flatMap { perfume ->
+                listOf(
+                    perfume.topNotes.split(","),
+                    perfume.middleNotes.split(","),
+                    perfume.baseNotes.split(",")
+                ).flatten().map { it.trim() }.filter { it.isNotEmpty() }
             }
+            val noteFrequency = allNotes.groupingBy { it }.eachCount()
+            val preferredNotes = noteFrequency.entries
+                .sortedByDescending { it.value }
+                .take(10)
+                .map { it.key }
+
+            AIPersonalization(
+                userId = userId,
+                preferredBrands = preferredBrands,
+                preferredNotes = preferredNotes,
+                commonOccasions = emptyMap(),
+                styleProfile = "Balanced",
+                intensityPreference = "Moderate",
+                lastUpdated = System.currentTimeMillis().toString()
+            )
         }
-        val styleProfile = styleScores.maxByOrNull { it.value }?.key ?: "Balanced"
-
-        println("DEBUG - Analysis complete: Style=$styleProfile, Brands=${preferredBrands.size}, Notes=${preferredNotes.size}")
-
-        return AIPersonalization(
-            userId = userId,
-            preferredBrands = preferredBrands,
-            preferredNotes = preferredNotes,
-            commonOccasions = emptyMap(),
-            styleProfile = styleProfile,
-            intensityPreference = "Moderate",
-            lastUpdated = System.currentTimeMillis().toString()
-        )
     }
 
     fun observePersonalization(userId: String): Flow<AIPersonalization?> = flow {

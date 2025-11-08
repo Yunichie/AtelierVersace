@@ -45,9 +45,10 @@ class ProfileViewModel(
     private fun startPeriodicRefresh() {
         viewModelScope.launch {
             while (true) {
-                delay(3000)
+                delay(2000)
                 if (!isRefreshing) {
                     loadStats()
+                    loadPersonalization()
                 }
             }
         }
@@ -74,13 +75,20 @@ class ProfileViewModel(
             try {
                 val user = authRepository.getCurrentUser()
                 if (user != null) {
+                    println("DEBUG - Loading personalization for user: ${user.id}")
                     val result = aiRepository.getPersonalization(user.id)
                     if (result.isSuccess) {
-                        _personalization.value = result.getOrNull()
+                        val personalizationData = result.getOrNull()
+                        println("DEBUG - Personalization loaded: ${personalizationData?.styleProfile}")
+                        _personalization.value = personalizationData
+                    } else {
+                        println("DEBUG - No personalization found for user")
+                        _personalization.value = null
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                println("ERROR - Failed to load personalization: ${e.message}")
             }
         }
     }

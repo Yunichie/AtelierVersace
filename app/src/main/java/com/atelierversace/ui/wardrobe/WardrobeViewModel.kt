@@ -10,6 +10,7 @@ import com.atelierversace.utils.PersonalizedGeminiHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 sealed class RecommendationState {
     object Idle : RecommendationState()
@@ -34,15 +35,15 @@ class WardrobeViewModel(
     private val _recommendationState = MutableStateFlow<RecommendationState>(RecommendationState.Idle)
     val recommendationState: StateFlow<RecommendationState> = _recommendationState
 
-    private val _favorites = MutableStateFlow<Set<String>>(emptySet())
-    val favorites: StateFlow<Set<String>> = _favorites
+    private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteIds: StateFlow<Set<String>> = _favoriteIds
 
     private var currentUserId: String? = null
 
     fun initialize(userId: String) {
         currentUserId = userId
         loadWardrobe(userId)
-        loadWishlist(userId)
+        loadFavorites(userId)
     }
 
     private fun loadWardrobe(userId: String) {
@@ -50,40 +51,107 @@ class WardrobeViewModel(
             val result = cloudRepository.getWardrobe(userId)
             if (result.isSuccess) {
                 _wardrobe.value = result.getOrNull() ?: emptyList()
+                println("DEBUG - Loaded ${_wardrobe.value.size} wardrobe items")
             }
         }
     }
 
-    private fun loadWishlist(userId: String) {
+    private fun loadFavorites(userId: String) {
         viewModelScope.launch {
-            val result = cloudRepository.getWishlist(userId)
+            val result = cloudRepository.getFavorites(userId)
             if (result.isSuccess) {
-                val wishlistItems = result.getOrNull() ?: emptyList()
-                _wishlist.value = wishlistItems
-                _favorites.value = wishlistItems.map { it.id ?: "" }.toSet()
+                val favoriteItems = result.getOrNull() ?: emptyList()
+                _favoriteIds.value = favoriteItems.map { it.id ?: "" }.toSet()
+                println("DEBUG - Loaded ${_favoriteIds.value.size} favorites: ${_favoriteIds.value}")
             }
         }
     }
 
     fun isFavorite(perfumeId: String): Boolean {
-        return _favorites.value.contains(perfumeId)
+        val result = _favoriteIds.value.contains(perfumeId)
+        println("DEBUG - isFavorite($perfumeId) = $result")
+        return result
     }
 
     fun toggleFavorite(perfumeId: String) {
         viewModelScope.launch {
-            val perfume = _wardrobe.value.find { it.id == perfumeId } ?: return@launch
+            val currentFavorites = _favoriteIds.value
+            val isFavorite = currentFavorites.contains(perfumeId)
 
-            val isFavorite = _favorites.value.contains(perfumeId)
+            println("DEBUG - toggleFavorite: $perfumeId, current state: $isFavorite")
 
-            cloudRepository.toggleFavorite(perfumeId, !isFavorite)
-
-            if (isFavorite) {
-                _favorites.value = _favorites.value - perfumeId
+            _favoriteIds.value = if (isFavorite) {
+                currentFavorites - perfumeId
             } else {
-                _favorites.value = _favorites.value + perfumeId
+                currentFavorites + perfumeId
             }
 
-            currentUserId?.let { loadWishlist(it) }
+            println("DEBUG - Updated favorites locally: ${_favoriteIds.value}")
+
+            val result = cloudRepository.toggleFavorite(perfumeId, !isFavorite)
+
+            if (result.isSuccess) {
+                println("DEBUG - Toggle favorite successful on backend")
+                delay(300)
+                currentUserId?.let {
+                    loadFavorites(it)
+                    updateAIPersonalization(it)
+                }
+            } else {
+                println("ERROR - Toggle favorite failed: ${result.exceptionOrNull()?.message}")
+                _favoriteIds.value = currentFavorites
+            }
+        }
+    }
+
+    fun deletePerfume(perfumeId: String) {
+        viewModelScope.launch {
+            try {
+                println("DEBUG - Deleting perfume: $perfumeId")
+
+                val result = cloudRepository.deletePerfume(perfumeId)
+
+                if (result.isSuccess) {
+                    println("DEBUG - Delete successful")
+                    currentUserId?.let { userId ->
+                        loadWardrobe(userId)
+                        loadFavorites(userId)
+                        updateAIPersonalization(userId)
+                    }
+                } else {
+                    println("ERROR - Delete failed: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("ERROR - Exception deleting perfume: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun updateAIPersonalization(userId: String) {
+        try {
+            println("DEBUG - Updating AI personalization after wardrobe change")
+
+            val wardrobeResult = cloudRepository.getWardrobe(userId)
+            if (wardrobeResult.isSuccess) {
+                val perfumes = wardrobeResult.getOrNull() ?: emptyList()
+
+                if (perfumes.isNotEmpty()) {
+                    val newPersonalization = aiRepository.analyzeUserPreferences(userId, perfumes)
+
+                    val saveResult = aiRepository.updatePersonalization(newPersonalization)
+                    if (saveResult.isSuccess) {
+                        println("DEBUG - AI personalization updated successfully")
+                    } else {
+                        println("ERROR - Failed to save AI personalization: ${saveResult.exceptionOrNull()?.message}")
+                    }
+                } else {
+                    println("DEBUG - Wardrobe empty, skipping AI personalization update")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Failed to update AI personalization: ${e.message}")
         }
     }
 

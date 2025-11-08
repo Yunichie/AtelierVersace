@@ -132,8 +132,13 @@ class DiscoveryViewModel(
 
                 println("DEBUG - Currently in wishlist: $isCurrentlyInWishlist")
 
+                _wishlistItems.value = if (isCurrentlyInWishlist) {
+                    currentSet - key
+                } else {
+                    currentSet + key
+                }
+
                 if (isCurrentlyInWishlist) {
-                    // Remove from wishlist
                     val existing = _wishlist.value.find {
                         it.brand == profile.brand && it.name == profile.name
                     }
@@ -141,13 +146,12 @@ class DiscoveryViewModel(
                     if (existing != null && existing.id != null) {
                         println("DEBUG - Removing from wishlist, id: ${existing.id}")
 
-                        _wishlistItems.value = currentSet - key
-
                         val result = cloudRepository.deletePerfume(existing.id)
                         if (result.isSuccess) {
                             println("DEBUG - Successfully removed from wishlist")
                             delay(300)
                             loadWishlist(userId)
+                            updateAIPersonalization(userId)
                         } else {
                             _wishlistItems.value = currentSet
                             println("ERROR: Failed to remove from wishlist: ${result.exceptionOrNull()?.message}")
@@ -155,6 +159,7 @@ class DiscoveryViewModel(
                         }
                     } else {
                         println("ERROR: Could not find existing perfume to remove")
+                        _wishlistItems.value = currentSet
                     }
                 } else {
                     println("DEBUG - Adding to wishlist")
@@ -177,13 +182,12 @@ class DiscoveryViewModel(
 
                     println("DEBUG - Perfume object to add: $perfume")
 
-                    _wishlistItems.value = currentSet + key
-
                     val result = cloudRepository.addPerfume(perfume)
                     if (result.isSuccess) {
                         println("DEBUG - Successfully added to wishlist")
                         delay(300)
                         loadWishlist(userId)
+                        updateAIPersonalization(userId)
                     } else {
                         _wishlistItems.value = currentSet
                         println("ERROR: Failed to add to wishlist: ${result.exceptionOrNull()?.message}")
@@ -215,6 +219,7 @@ class DiscoveryViewModel(
                         println("DEBUG - Successfully removed from wishlist")
                         delay(300)
                         loadWishlist(userId)
+                        updateAIPersonalization(userId)
                     } else {
                         println("ERROR - Failed to remove: ${result.exceptionOrNull()?.message}")
                         loadWishlist(userId)
@@ -225,6 +230,33 @@ class DiscoveryViewModel(
                 println("ERROR - Exception in removeFromWishlist: ${e.message}")
                 loadWishlist(userId)
             }
+        }
+    }
+
+    private suspend fun updateAIPersonalization(userId: String) {
+        try {
+            println("DEBUG - Updating AI personalization after wishlist change")
+
+            val wardrobeResult = cloudRepository.getWardrobe(userId)
+            if (wardrobeResult.isSuccess) {
+                val perfumes = wardrobeResult.getOrNull() ?: emptyList()
+
+                if (perfumes.isNotEmpty()) {
+                    val newPersonalization = aiRepository.analyzeUserPreferences(userId, perfumes)
+
+                    val saveResult = aiRepository.updatePersonalization(newPersonalization)
+                    if (saveResult.isSuccess) {
+                        println("DEBUG - AI personalization updated successfully")
+                    } else {
+                        println("ERROR - Failed to save AI personalization: ${saveResult.exceptionOrNull()?.message}")
+                    }
+                } else {
+                    println("DEBUG - Wardrobe empty, skipping AI personalization update")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Failed to update AI personalization: ${e.message}")
         }
     }
 
