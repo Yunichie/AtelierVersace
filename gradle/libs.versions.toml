@@ -6,7 +6,6 @@ coilCompose = "2.7.0"
 composeBom = "2025.10.01"
 coreKtxVersion = "1.17.0"
 firebaseAi = "17.5.0"
-generativeaiGoogle = "0.9.0-1.1.0"
 gotrueKt = "2.6.1"
 json = "20250517"
 kotlin = "2.2.20"
@@ -58,10 +57,8 @@ androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview
 auth-kt = { module = "io.github.jan-tennert.supabase:auth-kt" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
-#generativeai = { module = "com.google.ai.client.generativeai:generativeai", version.ref = "generativeai" }
 firebase-ai = { module = "com.google.firebase:firebase-ai", version.ref = "firebaseAi" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
-generativeai-google = { module = "dev.shreyaspatil.generativeai:generativeai-google", version.ref = "generativeaiGoogle" }
 gotrue-kt = { module = "io.github.jan-tennert.supabase:gotrue-kt", version.ref = "gotrueKt" }
 json = { module = "org.json:json", version.ref = "json" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

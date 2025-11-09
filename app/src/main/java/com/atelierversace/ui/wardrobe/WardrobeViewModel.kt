@@ -3,6 +3,7 @@ package com.atelierversace.ui.wardrobe
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.atelierversace.data.remote.PerfumeCloud
+import com.atelierversace.data.remote.LayeringRecommendation
 import com.atelierversace.data.repository.CloudPerfumeRepository
 import com.atelierversace.data.repository.WeatherRepository
 import com.atelierversace.data.repository.AIPersonalizationRepository
@@ -29,14 +30,17 @@ class WardrobeViewModel(
     private val _wardrobe = MutableStateFlow<List<PerfumeCloud>>(emptyList())
     val wardrobe: StateFlow<List<PerfumeCloud>> = _wardrobe
 
-    private val _wishlist = MutableStateFlow<List<PerfumeCloud>>(emptyList())
-    val wishlist: StateFlow<List<PerfumeCloud>> = _wishlist
-
     private val _recommendationState = MutableStateFlow<RecommendationState>(RecommendationState.Idle)
     val recommendationState: StateFlow<RecommendationState> = _recommendationState
 
     private val _favoriteIds = MutableStateFlow<Set<String>>(emptySet())
     val favoriteIds: StateFlow<Set<String>> = _favoriteIds
+
+    private val _savedLayerings = MutableStateFlow<List<Triple<LayeringRecommendation, PerfumeCloud?, PerfumeCloud?>>>(emptyList())
+    val savedLayerings: StateFlow<List<Triple<LayeringRecommendation, PerfumeCloud?, PerfumeCloud?>>> = _savedLayerings
+
+    private val _isLoadingLayerings = MutableStateFlow(false)
+    val isLoadingLayerings: StateFlow<Boolean> = _isLoadingLayerings
 
     private var currentUserId: String? = null
 
@@ -44,6 +48,7 @@ class WardrobeViewModel(
         currentUserId = userId
         loadWardrobe(userId)
         loadFavorites(userId)
+        loadSavedLayerings(userId)
     }
 
     private fun loadWardrobe(userId: String) {
@@ -62,15 +67,57 @@ class WardrobeViewModel(
             if (result.isSuccess) {
                 val favoriteItems = result.getOrNull() ?: emptyList()
                 _favoriteIds.value = favoriteItems.map { it.id ?: "" }.toSet()
-                println("DEBUG - Loaded ${_favoriteIds.value.size} favorites: ${_favoriteIds.value}")
+                println("DEBUG - Loaded ${_favoriteIds.value.size} favorites")
             }
         }
     }
 
-    fun isFavorite(perfumeId: String): Boolean {
-        val result = _favoriteIds.value.contains(perfumeId)
-        println("DEBUG - isFavorite($perfumeId) = $result")
-        return result
+    fun loadSavedLayerings(userId: String) {
+        viewModelScope.launch {
+            _isLoadingLayerings.value = true
+            try {
+                val layeringsResult = aiRepository.getLayeringHistory(userId)
+
+                if (layeringsResult.isSuccess) {
+                    val layerings = layeringsResult.getOrThrow()
+                    val wardrobe = _wardrobe.value
+
+                    val enriched = layerings.map { layering ->
+                        val basePerfume = wardrobe.find { it.id == layering.basePerfumeId }
+                        val layerPerfume = wardrobe.find { it.id == layering.layerPerfumeId }
+                        Triple(layering, basePerfume, layerPerfume)
+                    }.filter { it.second != null && it.third != null }
+
+                    _savedLayerings.value = enriched
+                    println("DEBUG - Loaded ${enriched.size} saved layerings")
+                } else {
+                    println("ERROR - Failed to load layerings: ${layeringsResult.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("ERROR - Exception loading layerings: ${e.message}")
+            } finally {
+                _isLoadingLayerings.value = false
+            }
+        }
+    }
+
+    fun removeSavedLayering(layeringId: String) {
+        viewModelScope.launch {
+            try {
+                val result = aiRepository.deleteLayeringRecommendation(layeringId)
+
+                if (result.isSuccess) {
+                    currentUserId?.let { loadSavedLayerings(it) }
+                    println("DEBUG - Removed saved layering: $layeringId")
+                } else {
+                    println("ERROR - Failed to remove layering: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("ERROR - Exception removing layering: ${e.message}")
+            }
+        }
     }
 
     fun toggleFavorite(perfumeId: String) {
@@ -86,12 +133,10 @@ class WardrobeViewModel(
                 currentFavorites + perfumeId
             }
 
-            println("DEBUG - Updated favorites locally: ${_favoriteIds.value}")
-
             val result = cloudRepository.toggleFavorite(perfumeId, !isFavorite)
 
             if (result.isSuccess) {
-                println("DEBUG - Toggle favorite successful on backend")
+                println("DEBUG - Toggle favorite successful")
                 delay(300)
                 currentUserId?.let {
                     loadFavorites(it)
@@ -108,7 +153,6 @@ class WardrobeViewModel(
         viewModelScope.launch {
             try {
                 println("DEBUG - Deleting perfume: $perfumeId")
-
                 val result = cloudRepository.deletePerfume(perfumeId)
 
                 if (result.isSuccess) {
@@ -116,6 +160,7 @@ class WardrobeViewModel(
                     currentUserId?.let { userId ->
                         loadWardrobe(userId)
                         loadFavorites(userId)
+                        loadSavedLayerings(userId)
                         updateAIPersonalization(userId)
                     }
                 } else {
@@ -130,23 +175,19 @@ class WardrobeViewModel(
 
     private suspend fun updateAIPersonalization(userId: String) {
         try {
-            println("DEBUG - Updating AI personalization after wardrobe change")
-
+            println("DEBUG - Updating AI personalization")
             val wardrobeResult = cloudRepository.getWardrobe(userId)
+
             if (wardrobeResult.isSuccess) {
                 val perfumes = wardrobeResult.getOrNull() ?: emptyList()
 
                 if (perfumes.isNotEmpty()) {
                     val newPersonalization = aiRepository.analyzeUserPreferences(userId, perfumes)
-
                     val saveResult = aiRepository.updatePersonalization(newPersonalization)
+
                     if (saveResult.isSuccess) {
-                        println("DEBUG - AI personalization updated successfully")
-                    } else {
-                        println("ERROR - Failed to save AI personalization: ${saveResult.exceptionOrNull()?.message}")
+                        println("DEBUG - AI personalization updated")
                     }
-                } else {
-                    println("DEBUG - Wardrobe empty, skipping AI personalization update")
                 }
             }
         } catch (e: Exception) {
@@ -179,7 +220,6 @@ class WardrobeViewModel(
                 }
 
                 val weather = weatherResult.getOrThrow()
-
                 val personalization = if (userId != null) {
                     aiRepository.getPersonalization(userId).getOrNull()
                 } else null
@@ -199,7 +239,6 @@ class WardrobeViewModel(
                 }
 
                 val (perfume, reason, _) = recommendation
-
                 _recommendationState.value = RecommendationState.Success(perfume, reason)
             } catch (e: Exception) {
                 _recommendationState.value = RecommendationState.Error(

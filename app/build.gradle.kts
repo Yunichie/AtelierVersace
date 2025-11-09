@@ -30,7 +30,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "GEMINI_KEY", "\"${localProperties.getProperty("GEMINI_KEY")}\"")
         buildConfigField("String", "OPENWEATHER_KEY", "\"${localProperties.getProperty("OPENWEATHER_KEY")}\"")
         buildConfigField("String", "SUPABASE_URL", "\"${localProperties.getProperty("SUPABASE_URL") ?: ""}\"")
         buildConfigField("String", "SUPABASE_KEY", "\"${localProperties.getProperty("SUPABASE_KEY") ?: ""}\"")
@@ -80,19 +79,13 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // Core
     implementation(libs.androidx.core.ktx.v1120)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Gemini AI
-    implementation(libs.generativeai.google)
-
-    // Networking
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.okhttp)

@@ -1,12 +1,15 @@
 package com.atelierversace.data.repository
 
+import android.net.Uri
 import com.atelierversace.data.remote.SupabaseClient
 import com.atelierversace.data.remote.UserProfile
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.io.File
 
 class AuthRepository {
     private val client = SupabaseClient.client
@@ -203,6 +206,92 @@ class AuthRepository {
             e.printStackTrace()
             println("ERROR - Failed to update profile: ${e.message}")
             Result.failure(Exception("Failed to update profile: ${e.message}"))
+        }
+    }
+
+    suspend fun uploadProfilePicture(userId: String, imageFile: File): Result<String> {
+        return try {
+            println("DEBUG - uploadProfilePicture called")
+            println("DEBUG - User ID: $userId")
+            println("DEBUG - File path: ${imageFile.absolutePath}")
+            println("DEBUG - File exists: ${imageFile.exists()}")
+            println("DEBUG - File size: ${imageFile.length()} bytes")
+
+            if (!imageFile.exists()) {
+                return Result.failure(Exception("Image file does not exist"))
+            }
+
+            if (imageFile.length() == 0L) {
+                return Result.failure(Exception("Image file is empty"))
+            }
+
+            println("DEBUG - Getting storage bucket 'avatars'")
+            val bucket = client.storage.from("avatars")
+
+            val fileName = "${userId}/avatar_${System.currentTimeMillis()}.jpg"
+
+            println("DEBUG - Upload path: $fileName")
+            println("DEBUG - Reading file bytes")
+
+            val fileBytes = imageFile.readBytes()
+            println("DEBUG - File bytes length: ${fileBytes.size}")
+
+            println("DEBUG - Starting upload to Supabase Storage")
+
+            bucket.upload(fileName, fileBytes) {
+                upsert = true
+            }
+
+            println("DEBUG - Upload completed, getting public URL")
+
+            val publicUrl = bucket.publicUrl(fileName)
+            println("DEBUG - Public URL: $publicUrl")
+
+            Result.success(publicUrl)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Upload failed with exception: ${e::class.simpleName}")
+            println("ERROR - Error message: ${e.message}")
+            println("ERROR - Stack trace:")
+            e.stackTrace.forEach { println("  at $it") }
+
+            val errorMessage = when {
+                e.message?.contains("Bucket not found") == true ->
+                    "Storage bucket 'avatars' not found."
+                e.message?.contains("permission") == true || e.message?.contains("unauthorized") == true ->
+                    "Permission denied."
+                e.message?.contains("network") == true ->
+                    "Network error. Please check your internet connection."
+                else -> "Failed to upload: ${e.message}"
+            }
+
+            Result.failure(Exception(errorMessage))
+        }
+    }
+
+    suspend fun deleteProfilePicture(avatarUrl: String): Result<Unit> {
+        return try {
+            println("DEBUG - Deleting profile picture: $avatarUrl")
+
+            val fileName = avatarUrl.substringAfter("/avatars/")
+            println("DEBUG - Extracted filename: $fileName")
+
+            if (fileName.isEmpty() || fileName == avatarUrl) {
+                println("WARN - Could not extract filename from URL, skipping deletion")
+                return Result.success(Unit)
+            }
+
+            val bucket = client.storage.from("avatars")
+
+            bucket.delete(fileName)
+            println("DEBUG - Profile picture deleted")
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Failed to delete profile picture: ${e.message}")
+            println("WARN - Continuing despite deletion error")
+            Result.success(Unit)
         }
     }
 

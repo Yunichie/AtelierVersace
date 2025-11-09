@@ -1,12 +1,15 @@
 package com.atelierversace.ui.profile
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,12 +20,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.atelierversace.data.remote.UserProfile
-import com.atelierversace.data.remote.AIPersonalization
+import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
 import com.atelierversace.ui.components.*
 import com.atelierversace.ui.theme.*
 
@@ -31,13 +35,61 @@ fun ProfileScreen(
     viewModel: ProfileViewModel,
     onSignOut: () -> Unit
 ) {
+    val context = LocalContext.current
     val userProfile by viewModel.userProfile.collectAsState()
     val personalization by viewModel.personalization.collectAsState()
     val wardrobeCount by viewModel.wardrobeCount.collectAsState()
     val wishlistCount by viewModel.wishlistCount.collectAsState()
     val favoritesCount by viewModel.favoritesCount.collectAsState()
+    val isUploading by viewModel.isUploading.collectAsState()
+    val uploadError by viewModel.uploadError.collectAsState()
 
     var showSignOutDialog by remember { mutableStateOf(false) }
+    var showImagePicker by remember { mutableStateOf(false) }
+    var showRemoveConfirmation by remember { mutableStateOf(false) }
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+        if (isGranted) {
+            showImagePicker = true
+        }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            viewModel.uploadProfilePicture(it, context)
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+
+                if (bitmap != null) {
+                    viewModel.uploadProfilePicture(bitmap, context)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -55,7 +107,6 @@ fun ProfileScreen(
         ) {
             item { Spacer(modifier = Modifier.height(16.dp)) }
 
-            // Profile Header
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -67,27 +118,78 @@ fun ProfileScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.radialGradient(
-                                        colors = listOf(
-                                            SkyBlue.copy(alpha = 0.3f),
-                                            SkyBlue.copy(alpha = 0.1f)
-                                        )
-                                    )
+                        Box(contentAlignment = Alignment.BottomEnd) {
+                            if (userProfile?.avatarUrl != null) {
+                                AsyncImage(
+                                    model = userProfile!!.avatarUrl,
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape)
+                                        .border(3.dp, Color.White.copy(alpha = 0.5f), CircleShape),
+                                    contentScale = ContentScale.Crop
                                 )
-                                .border(3.dp, Color.White.copy(alpha = 0.5f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                modifier = Modifier.size(50.dp),
-                                tint = SkyBlue
-                            )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.radialGradient(
+                                                colors = listOf(
+                                                    SkyBlue.copy(alpha = 0.3f),
+                                                    SkyBlue.copy(alpha = 0.1f)
+                                                )
+                                            )
+                                        )
+                                        .border(3.dp, Color.White.copy(alpha = 0.5f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(50.dp),
+                                        tint = SkyBlue
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                onClick = {
+                                    if (userProfile?.avatarUrl != null) {
+                                        showRemoveConfirmation = true
+                                    } else {
+                                        if (hasCameraPermission) {
+                                            showImagePicker = true
+                                        } else {
+                                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                        }
+                                    }
+                                },
+                                shape = CircleShape,
+                                color = SkyBlue,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    if (isUploading) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            color = Color.White,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = if (userProfile?.avatarUrl != null)
+                                                Icons.Default.Edit
+                                            else
+                                                Icons.Default.CameraAlt,
+                                            contentDescription = "Change picture",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -135,7 +237,6 @@ fun ProfileScreen(
                 }
             }
 
-            // AI Personalization Stats
             item {
                 Text(
                     text = "AI Personalization",
@@ -147,7 +248,6 @@ fun ProfileScreen(
             }
 
             if (personalization != null) {
-                // Style Profile
                 item {
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -190,7 +290,6 @@ fun ProfileScreen(
                     }
                 }
 
-                // Preferred Brands
                 if (personalization!!.preferredBrands.isNotEmpty()) {
                     item {
                         GlassCard(
@@ -240,7 +339,6 @@ fun ProfileScreen(
                     }
                 }
 
-                // Preferred Notes
                 if (personalization!!.preferredNotes.isNotEmpty()) {
                     item {
                         GlassCard(
@@ -294,7 +392,6 @@ fun ProfileScreen(
                     }
                 }
 
-                // Intensity Preference
                 item {
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -337,7 +434,6 @@ fun ProfileScreen(
                     }
                 }
             } else {
-                // No personalization yet
                 item {
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -373,7 +469,6 @@ fun ProfileScreen(
                 }
             }
 
-            // Settings Section
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -385,7 +480,6 @@ fun ProfileScreen(
                 )
             }
 
-            // Sign Out
             item {
                 GlassCard(
                     onClick = { showSignOutDialog = true },
@@ -418,7 +512,148 @@ fun ProfileScreen(
         }
     }
 
-    // Sign Out Confirmation
+    if (showImagePicker) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f)),
+            contentAlignment = Alignment.Center
+        ) {
+            GlassCard(
+                modifier = Modifier.padding(32.dp),
+                backgroundColor = Color.White.copy(alpha = 0.95f),
+                borderColor = Color.White.copy(alpha = 0.6f),
+                cornerRadius = 24.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        "Change Profile Picture",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
+
+                    GlassButton(
+                        onClick = {
+                            showImagePicker = false
+                            cameraLauncher.launch(null)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Take Photo", color = Color.White)
+                    }
+
+                    OutlinedGlassButton(
+                        onClick = {
+                            showImagePicker = false
+                            galleryLauncher.launch("image/*")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoLibrary,
+                            contentDescription = null,
+                            tint = SkyBlue
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Choose from Gallery", color = SkyBlue)
+                    }
+
+                    TextButton(
+                        onClick = { showImagePicker = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                }
+            }
+        }
+    }
+
+    if (showRemoveConfirmation) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f)),
+            contentAlignment = Alignment.Center
+        ) {
+            GlassCard(
+                modifier = Modifier.padding(32.dp),
+                backgroundColor = Color.White.copy(alpha = 0.95f),
+                borderColor = Color.White.copy(alpha = 0.6f),
+                cornerRadius = 24.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        "Profile Picture",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
+
+                    Text(
+                        "What would you like to do?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+
+                    GlassButton(
+                        onClick = {
+                            showRemoveConfirmation = false
+                            showImagePicker = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Change Picture", color = Color.White)
+                    }
+
+                    OutlinedGlassButton(
+                        onClick = {
+                            showRemoveConfirmation = false
+                            viewModel.removeProfilePicture()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = Taupe
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Remove Picture", color = Taupe)
+                    }
+
+                    TextButton(
+                        onClick = { showRemoveConfirmation = false },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cancel", color = TextSecondary)
+                    }
+                }
+            }
+        }
+    }
+
     if (showSignOutDialog) {
         Box(
             modifier = Modifier
@@ -472,6 +707,43 @@ fun ProfileScreen(
                             Text("Sign Out", color = Color.White)
                         }
                     }
+                }
+            }
+        }
+    }
+
+    uploadError?.let { error ->
+        LaunchedEffect(error) {
+            kotlinx.coroutines.delay(3000)
+            viewModel.clearUploadError()
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 100.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            GlassCard(
+                modifier = Modifier.padding(horizontal = 32.dp),
+                backgroundColor = Taupe.copy(alpha = 0.9f),
+                borderColor = Color.White.copy(alpha = 0.5f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                    Text(
+                        error,
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
         }

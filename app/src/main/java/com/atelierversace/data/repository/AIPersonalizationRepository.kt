@@ -75,6 +75,24 @@ class AIPersonalizationRepository {
         }
     }
 
+    suspend fun deleteLayeringRecommendation(layeringId: String): Result<Unit> {
+        return try {
+            println("DEBUG - Deleting layering recommendation: $layeringId")
+            client.from("layering_recommendations")
+                .delete {
+                    filter {
+                        eq("id", layeringId)
+                    }
+                }
+            println("DEBUG - Layering recommendation deleted")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Failed to delete layering recommendation: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
     suspend fun getLayeringHistory(userId: String): Result<List<LayeringRecommendation>> {
         return try {
             println("DEBUG - Getting layering history for userId: $userId")
@@ -104,6 +122,24 @@ class AIPersonalizationRepository {
         } catch (e: Exception) {
             e.printStackTrace()
             println("ERROR - Failed to save interaction: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateInteractionFeedback(interactionId: String, wasHelpful: Boolean): Result<Unit> {
+        return try {
+            println("DEBUG - Updating interaction feedback: $interactionId -> $wasHelpful")
+            client.from("ai_interactions")
+                .update(mapOf("was_helpful" to wasHelpful)) {
+                    filter {
+                        eq("id", interactionId)
+                    }
+                }
+            println("DEBUG - Interaction feedback updated")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("ERROR - Failed to update interaction feedback: ${e.message}")
             Result.failure(e)
         }
     }

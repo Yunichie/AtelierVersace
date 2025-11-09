@@ -2,7 +2,6 @@ package com.atelierversace.ui.ai_recommendations
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,8 +29,10 @@ import com.atelierversace.utils.LayeringCombination
 fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
     val todayRecommendation by viewModel.todayRecommendation.collectAsState()
     val layeringCombinations by viewModel.layeringCombinations.collectAsState()
+    val savedLayerings by viewModel.savedLayerings.collectAsState()
     val occasionRecommendations by viewModel.occasionRecommendations.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     var selectedTab by remember { mutableStateOf(0) }
     var showOccasionInput by remember { mutableStateOf(false) }
@@ -146,8 +147,11 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
                     )
                     1 -> LayeringContent(
                         combinations = layeringCombinations,
+                        savedLayerings = savedLayerings,
                         isLoading = isLoading,
-                        onSelectCombination = { selectedCombination = it }
+                        onSelectCombination = { selectedCombination = it },
+                        onSaveLayering = { viewModel.saveLayering(it) },
+                        onRemoveSaved = { viewModel.removeSavedLayering(it.id ?: "") }
                     )
                     2 -> OccasionsContent(
                         recommendations = occasionRecommendations,
@@ -250,8 +254,53 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
     if (selectedCombination != null) {
         LayeringDetailDialog(
             combination = selectedCombination!!,
+            isSaved = savedLayerings.any {
+                it.basePerfumeId == selectedCombination!!.basePerfume.id &&
+                        it.layerPerfumeId == selectedCombination!!.layerPerfume.id
+            },
+            onSave = {
+                viewModel.saveLayering(selectedCombination!!)
+                selectedCombination = null
+            },
             onDismiss = { selectedCombination = null }
         )
+    }
+
+    errorMessage?.let { error ->
+        LaunchedEffect(error) {
+            kotlinx.coroutines.delay(3000)
+            viewModel.clearError()
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 100.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            GlassCard(
+                modifier = Modifier.padding(horizontal = 32.dp),
+                backgroundColor = Taupe.copy(alpha = 0.9f),
+                borderColor = Color.White.copy(alpha = 0.5f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                    Text(
+                        error,
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -424,14 +473,21 @@ private fun TodayRecommendationContent(
                 )
             }
         }
+
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
+        }
     }
 }
 
 @Composable
 private fun LayeringContent(
     combinations: List<LayeringCombination>,
+    savedLayerings: List<com.atelierversace.data.remote.LayeringRecommendation>,
     isLoading: Boolean,
-    onSelectCombination: (LayeringCombination) -> Unit
+    onSelectCombination: (LayeringCombination) -> Unit,
+    onSaveLayering: (LayeringCombination) -> Unit,
+    onRemoveSaved: (com.atelierversace.data.remote.LayeringRecommendation) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -449,9 +505,25 @@ private fun LayeringContent(
             }
         } else if (combinations.isNotEmpty()) {
             items(combinations) { combination ->
+                val isSaved = savedLayerings.any {
+                    it.basePerfumeId == combination.basePerfume.id &&
+                            it.layerPerfumeId == combination.layerPerfume.id
+                }
+
                 LayeringCombinationCard(
                     combination = combination,
-                    onClick = { onSelectCombination(combination) }
+                    isSaved = isSaved,
+                    onClick = { onSelectCombination(combination) },
+                    onSaveToggle = {
+                        if (isSaved) {
+                            savedLayerings.find {
+                                it.basePerfumeId == combination.basePerfume.id &&
+                                        it.layerPerfumeId == combination.layerPerfume.id
+                            }?.let { onRemoveSaved(it) }
+                        } else {
+                            onSaveLayering(combination)
+                        }
+                    }
                 )
             }
         } else {
@@ -462,13 +534,19 @@ private fun LayeringContent(
                 )
             }
         }
+
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
+        }
     }
 }
 
 @Composable
 private fun LayeringCombinationCard(
     combination: LayeringCombination,
-    onClick: () -> Unit
+    isSaved: Boolean,
+    onClick: () -> Unit,
+    onSaveToggle: () -> Unit
 ) {
     GlassCard(
         onClick = onClick,
@@ -492,18 +570,32 @@ private fun LayeringCombinationCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                Surface(
-                    shape = CircleShape,
-                    color = SkyBlue.copy(alpha = 0.2f),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            "${combination.harmonyScore}",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = SkyBlue,
-                            fontWeight = FontWeight.Bold
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IconButton(
+                        onClick = onSaveToggle,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = if (isSaved) "Remove from saved" else "Save layering",
+                            tint = if (isSaved) SkyBlue else TextSecondary,
+                            modifier = Modifier.size(20.dp)
                         )
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = SkyBlue.copy(alpha = 0.2f),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                "${combination.harmonyScore}",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = SkyBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -597,6 +689,10 @@ private fun OccasionsContent(
                 )
             }
         }
+
+        item {
+            Spacer(modifier = Modifier.height(80.dp))
+        }
     }
 }
 
@@ -672,6 +768,8 @@ private fun EmptyState(
 @Composable
 private fun LayeringDetailDialog(
     combination: LayeringCombination,
+    isSaved: Boolean,
+    onSave: () -> Unit,
     onDismiss: () -> Unit
 ) {
     Box(
@@ -748,11 +846,32 @@ private fun LayeringDetailDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                GlassButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Got it!", color = Color.White)
+                    if (!isSaved) {
+                        GlassButton(
+                            onClick = onSave,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bookmark,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Save Layering", color = Color.White)
+                        }
+                    } else {
+                        OutlinedGlassButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Close", color = TextSecondary)
+                        }
+                    }
                 }
             }
         }
