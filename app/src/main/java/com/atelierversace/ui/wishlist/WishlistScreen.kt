@@ -43,7 +43,7 @@ fun WishlistScreen(viewModel: DiscoveryViewModel) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
+                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
                 )
             )
     ) {
@@ -182,7 +182,7 @@ private fun WishlistItemCard(
         ) {
             Surface(
                 shape = CircleShape,
-                color = SkyBlue.copy(alpha = 0.2f),
+                color = IceBlue.copy(alpha = 0.2f),
                 modifier = Modifier.size(56.dp)
             ) {
                 Box(
@@ -192,7 +192,7 @@ private fun WishlistItemCard(
                     Icon(
                         imageVector = Icons.Default.Spa,
                         contentDescription = null,
-                        tint = SkyBlue,
+                        tint = IceBlue,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -205,7 +205,7 @@ private fun WishlistItemCard(
                 Text(
                     text = perfume.brand,
                     style = MaterialTheme.typography.labelMedium,
-                    color = SkyBlue,
+                    color = IceBlue,
                     fontWeight = FontWeight.SemiBold
                 )
 
@@ -232,7 +232,7 @@ private fun WishlistItemCard(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Remove",
-                    tint = Taupe
+                    tint = Cornflower
                 )
             }
         }
@@ -273,7 +273,7 @@ private fun WishlistDetailDialog(
                         Text(
                             perfume.brand,
                             style = MaterialTheme.typography.labelLarge,
-                            color = SkyBlue,
+                            color = IceBlue,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -312,9 +312,9 @@ private fun WishlistDetailDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, SkyBlue)
-                    NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, LightPeriwinkle)
-                    NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Taupe)
+                    NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, IceBlue)
+                    NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, Periwinkle)
+                    NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Cornflower)
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -330,10 +330,10 @@ private fun WishlistDetailDialog(
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = null,
-                            tint = Taupe
+                            tint = Cornflower
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Remove", color = Taupe, fontSize = 14.sp)
+                        Text("Remove", color = Cornflower, fontSize = 14.sp)
                     }
 
                     GlassButton(

@@ -43,7 +43,7 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
+                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
                 )
             )
     ) {
@@ -88,7 +88,7 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
                                     contentDescription = "Refresh",
-                                    tint = SkyBlue,
+                                    tint = IceBlue,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -210,7 +210,7 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = SkyBlue
+                                cursorColor = IceBlue
                             ),
                             minLines = 2
                         )
@@ -280,7 +280,7 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
         ) {
             GlassCard(
                 modifier = Modifier.padding(horizontal = 32.dp),
-                backgroundColor = Taupe.copy(alpha = 0.9f),
+                backgroundColor = Cornflower.copy(alpha = 0.9f),
                 borderColor = Color.White.copy(alpha = 0.5f)
             ) {
                 Row(
@@ -314,14 +314,14 @@ private fun TabChip(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         color = if (selected) {
-            SkyBlue.copy(alpha = 0.25f)
+            IceBlue.copy(alpha = 0.25f)
         } else {
             Color.White.copy(alpha = 0.25f)
         },
         border = androidx.compose.foundation.BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
             color = if (selected) {
-                SkyBlue.copy(alpha = 0.5f)
+                IceBlue.copy(alpha = 0.5f)
             } else {
                 Color.White.copy(alpha = 0.4f)
             }
@@ -333,7 +333,7 @@ private fun TabChip(
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
             ),
-            color = if (selected) SkyBlue else TextSecondary
+            color = if (selected) IceBlue else TextSecondary
         )
     }
 }
@@ -354,7 +354,7 @@ private fun TodayRecommendationContent(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SkyBlue)
+                    CircularProgressIndicator(color = IceBlue)
                 }
             }
         } else if (recommendation != null) {
@@ -382,8 +382,8 @@ private fun TodayRecommendationContent(
                                     .background(
                                         Brush.radialGradient(
                                             colors = listOf(
-                                                SkyBlue.copy(alpha = 0.3f),
-                                                SkyBlue.copy(alpha = 0.1f)
+                                                IceBlue.copy(alpha = 0.3f),
+                                                IceBlue.copy(alpha = 0.1f)
                                             )
                                         )
                                     ),
@@ -392,7 +392,7 @@ private fun TodayRecommendationContent(
                                 Icon(
                                     imageVector = Icons.Default.WbSunny,
                                     contentDescription = null,
-                                    tint = SkyBlue,
+                                    tint = IceBlue,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -410,9 +410,9 @@ private fun TodayRecommendationContent(
 
                         GlassBadge(
                             text = perfume.brand,
-                            backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                            borderColor = SkyBlue.copy(alpha = 0.3f),
-                            textColor = SkyBlue
+                            backgroundColor = IceBlue.copy(alpha = 0.15f),
+                            borderColor = IceBlue.copy(alpha = 0.3f),
+                            textColor = IceBlue
                         )
 
                         Text(
@@ -432,8 +432,8 @@ private fun TodayRecommendationContent(
                         if (layering != "No layering recommended") {
                             GlassCard(
                                 modifier = Modifier.fillMaxWidth(),
-                                backgroundColor = LightPeriwinkle.copy(alpha = 0.15f),
-                                borderColor = LightPeriwinkle.copy(alpha = 0.3f)
+                                backgroundColor = Periwinkle.copy(alpha = 0.15f),
+                                borderColor = Periwinkle.copy(alpha = 0.3f)
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Row(
@@ -443,13 +443,13 @@ private fun TodayRecommendationContent(
                                         Icon(
                                             imageVector = Icons.Default.Layers,
                                             contentDescription = null,
-                                            tint = LightPeriwinkle,
+                                            tint = Periwinkle,
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text(
                                             "Layering Suggestion",
                                             style = MaterialTheme.typography.labelLarge,
-                                            color = LightPeriwinkle,
+                                            color = Periwinkle,
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     }
@@ -500,7 +500,7 @@ private fun LayeringContent(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SkyBlue)
+                    CircularProgressIndicator(color = IceBlue)
                 }
             }
         } else if (combinations.isNotEmpty()) {
@@ -578,21 +578,21 @@ private fun LayeringCombinationCard(
                         Icon(
                             imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                             contentDescription = if (isSaved) "Remove from saved" else "Save layering",
-                            tint = if (isSaved) SkyBlue else TextSecondary,
+                            tint = if (isSaved) IceBlue else TextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
 
                     Surface(
                         shape = CircleShape,
-                        color = SkyBlue.copy(alpha = 0.2f),
+                        color = IceBlue.copy(alpha = 0.2f),
                         modifier = Modifier.size(40.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 "${combination.harmonyScore}",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = SkyBlue,
+                                color = IceBlue,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -629,9 +629,9 @@ private fun LayeringCombinationCard(
 
             GlassBadge(
                 text = combination.occasion,
-                backgroundColor = LightPeriwinkle.copy(alpha = 0.15f),
-                borderColor = LightPeriwinkle.copy(alpha = 0.3f),
-                textColor = LightPeriwinkle
+                backgroundColor = Periwinkle.copy(alpha = 0.15f),
+                borderColor = Periwinkle.copy(alpha = 0.3f),
+                textColor = Periwinkle
             )
         }
     }
@@ -669,7 +669,7 @@ private fun OccasionsContent(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = SkyBlue)
+                    CircularProgressIndicator(color = IceBlue)
                 }
             }
         } else if (recommendations.isNotEmpty()) {
@@ -710,9 +710,9 @@ private fun OccasionRecommendationCard(
         Column(modifier = Modifier.padding(20.dp)) {
             GlassBadge(
                 text = occasion,
-                backgroundColor = Taupe.copy(alpha = 0.15f),
-                borderColor = Taupe.copy(alpha = 0.3f),
-                textColor = Taupe
+                backgroundColor = Cornflower.copy(alpha = 0.15f),
+                borderColor = Cornflower.copy(alpha = 0.3f),
+                textColor = Cornflower
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -839,9 +839,9 @@ private fun LayeringDetailDialog(
 
                 GlassBadge(
                     text = "Best for: ${combination.occasion}",
-                    backgroundColor = LightPeriwinkle.copy(alpha = 0.15f),
-                    borderColor = LightPeriwinkle.copy(alpha = 0.3f),
-                    textColor = LightPeriwinkle
+                    backgroundColor = Periwinkle.copy(alpha = 0.15f),
+                    borderColor = Periwinkle.copy(alpha = 0.3f),
+                    textColor = Periwinkle
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

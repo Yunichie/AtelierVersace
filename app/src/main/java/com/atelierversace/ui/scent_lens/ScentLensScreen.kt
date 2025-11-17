@@ -113,7 +113,7 @@ fun ScentLensScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
+                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
                 )
             )
     ) {
@@ -271,10 +271,10 @@ fun ScentLensScreen(
                         Icon(
                             imageVector = Icons.Default.PhotoLibrary,
                             contentDescription = null,
-                            tint = SkyBlue
+                            tint = IceBlue
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Choose from Gallery", color = SkyBlue)
+                        Text("Choose from Gallery", color = IceBlue)
                     }
 
                     TextButton(
@@ -311,7 +311,7 @@ private fun IdleContent(onCaptureClick: () -> Unit) {
                     imageVector = Icons.Default.CameraAlt,
                     contentDescription = null,
                     modifier = Modifier.size(100.dp),
-                    tint = SkyBlue.copy(alpha = 0.5f)
+                    tint = IceBlue.copy(alpha = 0.5f)
                 )
             }
         }
@@ -433,7 +433,7 @@ private fun SuccessContent(
                 Text(
                     text = brand,
                     style = MaterialTheme.typography.titleMedium,
-                    color = SkyBlue,
+                    color = IceBlue,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
@@ -495,7 +495,7 @@ private fun ErrorContent(
             imageVector = Icons.Default.Error,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
-            tint = Taupe.copy(alpha = 0.5f)
+            tint = Cornflower.copy(alpha = 0.5f)
         )
 
         Text(
@@ -570,9 +570,9 @@ private fun PersonaProfileCard(profile: PersonaProfile) {
             GlassDivider()
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                NotesSection("Top Notes", profile.topNotes, SkyBlue)
-                NotesSection("Middle Notes", profile.middleNotes, LightPeriwinkle)
-                NotesSection("Base Notes", profile.baseNotes, Taupe)
+                NotesSection("Top Notes", profile.topNotes, IceBlue)
+                NotesSection("Middle Notes", profile.middleNotes, Periwinkle)
+                NotesSection("Base Notes", profile.baseNotes, Cornflower)
             }
         }
     }

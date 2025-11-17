@@ -84,7 +84,7 @@ fun AuthScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
+                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
                 )
             )
     ) {
@@ -103,8 +103,8 @@ fun AuthScreen(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                SkyBlue.copy(alpha = 0.3f),
-                                SkyBlue.copy(alpha = 0.1f)
+                                IceBlue.copy(alpha = 0.3f),
+                                IceBlue.copy(alpha = 0.1f)
                             )
                         )
                     ),
@@ -114,7 +114,7 @@ fun AuthScreen(
                     imageVector = Icons.Default.Spa,
                     contentDescription = null,
                     modifier = Modifier.size(50.dp),
-                    tint = SkyBlue
+                    tint = IceBlue
                 )
             }
 
@@ -164,7 +164,7 @@ fun AuthScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 backgroundColor = Color.White.copy(alpha = 0.3f),
                                 borderColor = if (displayNameError != null) {
-                                    Taupe.copy(alpha = 0.6f)
+                                    Cornflower.copy(alpha = 0.6f)
                                 } else {
                                     Color.White.copy(alpha = 0.5f)
                                 }
@@ -183,7 +183,7 @@ fun AuthScreen(
                                         Icon(
                                             imageVector = Icons.Default.Person,
                                             contentDescription = null,
-                                            tint = SkyBlue
+                                            tint = IceBlue
                                         )
                                     },
                                     colors = TextFieldDefaults.colors(
@@ -191,7 +191,7 @@ fun AuthScreen(
                                         unfocusedContainerColor = Color.Transparent,
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
-                                        cursorColor = SkyBlue
+                                        cursorColor = IceBlue
                                     ),
                                     singleLine = true,
                                     isError = displayNameError != null
@@ -202,7 +202,7 @@ fun AuthScreen(
                                 Text(
                                     text = error,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Taupe,
+                                    color = Cornflower,
                                     modifier = Modifier.padding(start = 16.dp)
                                 )
                             }
@@ -214,7 +214,7 @@ fun AuthScreen(
                             modifier = Modifier.fillMaxWidth(),
                             backgroundColor = Color.White.copy(alpha = 0.3f),
                             borderColor = if (emailError != null) {
-                                Taupe.copy(alpha = 0.6f)
+                                Cornflower.copy(alpha = 0.6f)
                             } else {
                                 Color.White.copy(alpha = 0.5f)
                             }
@@ -233,7 +233,7 @@ fun AuthScreen(
                                     Icon(
                                         imageVector = Icons.Default.Email,
                                         contentDescription = null,
-                                        tint = SkyBlue
+                                        tint = IceBlue
                                     )
                                 },
                                 colors = TextFieldDefaults.colors(
@@ -241,7 +241,7 @@ fun AuthScreen(
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = SkyBlue
+                                    cursorColor = IceBlue
                                 ),
                                 singleLine = true,
                                 isError = emailError != null
@@ -252,7 +252,7 @@ fun AuthScreen(
                             Text(
                                 text = error,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Taupe,
+                                color = Cornflower,
                                 modifier = Modifier.padding(start = 16.dp)
                             )
                         }
@@ -263,7 +263,7 @@ fun AuthScreen(
                             modifier = Modifier.fillMaxWidth(),
                             backgroundColor = Color.White.copy(alpha = 0.3f),
                             borderColor = if (passwordError != null) {
-                                Taupe.copy(alpha = 0.6f)
+                                Cornflower.copy(alpha = 0.6f)
                             } else {
                                 Color.White.copy(alpha = 0.5f)
                             }
@@ -282,7 +282,7 @@ fun AuthScreen(
                                     Icon(
                                         imageVector = Icons.Default.Lock,
                                         contentDescription = null,
-                                        tint = SkyBlue
+                                        tint = IceBlue
                                     )
                                 },
                                 trailingIcon = {
@@ -304,7 +304,7 @@ fun AuthScreen(
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = SkyBlue
+                                    cursorColor = IceBlue
                                 ),
                                 singleLine = true,
                                 isError = passwordError != null
@@ -315,7 +315,7 @@ fun AuthScreen(
                             Text(
                                 text = error,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Taupe,
+                                color = Cornflower,
                                 modifier = Modifier.padding(start = 16.dp)
                             )
                         }
@@ -328,7 +328,7 @@ fun AuthScreen(
                         ) {
                             Text(
                                 "Forgot password?",
-                                color = SkyBlue,
+                                color = IceBlue,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -382,8 +382,8 @@ fun AuthScreen(
                     if (authState is AuthState.Error) {
                         GlassCard(
                             modifier = Modifier.fillMaxWidth(),
-                            backgroundColor = Taupe.copy(alpha = 0.1f),
-                            borderColor = Taupe.copy(alpha = 0.3f)
+                            backgroundColor = Cornflower.copy(alpha = 0.1f),
+                            borderColor = Cornflower.copy(alpha = 0.3f)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -395,12 +395,12 @@ fun AuthScreen(
                                 Icon(
                                     imageVector = Icons.Default.Error,
                                     contentDescription = null,
-                                    tint = Taupe,
+                                    tint = Cornflower,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
                                     text = (authState as AuthState.Error).message,
-                                    color = Taupe,
+                                    color = Cornflower,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -427,7 +427,7 @@ fun AuthScreen(
                         }) {
                             Text(
                                 text = if (loginMode) "Sign Up" else "Sign In",
-                                color = SkyBlue,
+                                color = IceBlue,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -474,7 +474,7 @@ fun AuthScreen(
                             modifier = Modifier.fillMaxWidth(),
                             backgroundColor = Color.White.copy(alpha = 0.3f),
                             borderColor = if (resetEmailError != null) {
-                                Taupe.copy(alpha = 0.6f)
+                                Cornflower.copy(alpha = 0.6f)
                             } else {
                                 Color.White.copy(alpha = 0.5f)
                             }
@@ -492,7 +492,7 @@ fun AuthScreen(
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = SkyBlue
+                                    cursorColor = IceBlue
                                 ),
                                 singleLine = true,
                                 isError = resetEmailError != null
@@ -503,7 +503,7 @@ fun AuthScreen(
                             Text(
                                 text = error,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Taupe,
+                                color = Cornflower,
                                 modifier = Modifier.padding(start = 16.dp)
                             )
                         }
@@ -556,7 +556,7 @@ fun AuthScreen(
         ) {
             GlassCard(
                 modifier = Modifier.padding(horizontal = 32.dp),
-                backgroundColor = SkyBlue.copy(alpha = 0.9f),
+                backgroundColor = IceBlue.copy(alpha = 0.9f),
                 borderColor = Color.White.copy(alpha = 0.5f)
             ) {
                 Row(

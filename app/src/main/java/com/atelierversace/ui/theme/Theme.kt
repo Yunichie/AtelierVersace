@@ -5,16 +5,36 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = SkyBlue,
-    secondary = LightPeriwinkle,
-    tertiary = Taupe,
-    background = Cream,
-    surface = GlassSurface,
+    primary = ElectricSapphire,
     onPrimary = Color.White,
+    primaryContainer = BabyBlueIce,
+    onPrimaryContainer = DeepSapphire,
+
+    secondary = Cornflower,
     onSecondary = Color.White,
-    onTertiary = Color.White,
+    secondaryContainer = Periwinkle,
+    onSecondaryContainer = ElectricSapphire,
+
+    tertiary = BabyBlueIce,
+    onTertiary = DeepSapphire,
+    tertiaryContainer = LightCyan,
+    onTertiaryContainer = Cornflower,
+
+    background = IceBlue,
     onBackground = TextPrimary,
-    onSurface = TextPrimary
+
+    surface = Color.White,
+    onSurface = TextPrimary,
+    surfaceVariant = SoftPeriwinkle,
+    onSurfaceVariant = TextSecondary,
+
+    error = Error,
+    onError = Color.White,
+    errorContainer = Color(0xFFFFEDED),
+    onErrorContainer = Error,
+
+    outline = GlassBorder,
+    outlineVariant = Color(0xFFE5E7EB)
 )
 
 @Composable

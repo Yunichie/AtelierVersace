@@ -59,7 +59,7 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Cream, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
+                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
                 )
             )
     ) {
@@ -104,7 +104,7 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                                 Icon(
                                     imageVector = Icons.Default.AutoAwesome,
                                     contentDescription = "Get Recommendation",
-                                    tint = SkyBlue,
+                                    tint = IceBlue,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -229,14 +229,14 @@ private fun TabChip(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         color = if (selected) {
-            SkyBlue.copy(alpha = 0.25f)
+            IceBlue.copy(alpha = 0.25f)
         } else {
             Color.White.copy(alpha = 0.25f)
         },
         border = BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
             color = if (selected) {
-                SkyBlue.copy(alpha = 0.5f)
+                IceBlue.copy(alpha = 0.5f)
             } else {
                 Color.White.copy(alpha = 0.4f)
             }
@@ -248,7 +248,7 @@ private fun TabChip(
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
             ),
-            color = if (selected) SkyBlue else TextSecondary
+            color = if (selected) IceBlue else TextSecondary
         )
     }
 }
@@ -306,7 +306,7 @@ private fun SavedLayeringsTab(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = SkyBlue)
+            CircularProgressIndicator(color = IceBlue)
         }
     } else if (savedLayerings.isEmpty()) {
         Box(
@@ -440,7 +440,7 @@ private fun SavedLayeringCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Remove",
-                        tint = Taupe
+                        tint = Cornflower
                     )
                 }
             }
@@ -485,9 +485,9 @@ private fun SavedLayeringCard(
 
             GlassBadge(
                 text = layering.occasion,
-                backgroundColor = LightPeriwinkle.copy(alpha = 0.15f),
-                borderColor = LightPeriwinkle.copy(alpha = 0.3f),
-                textColor = LightPeriwinkle
+                backgroundColor = Periwinkle.copy(alpha = 0.15f),
+                borderColor = Periwinkle.copy(alpha = 0.3f),
+                textColor = Periwinkle
             )
         }
     }
@@ -529,8 +529,8 @@ private fun PerfumeCard(
                             .background(
                                 Brush.verticalGradient(
                                     colors = listOf(
-                                        SkyBlue.copy(alpha = 0.2f),
-                                        LightPeriwinkle.copy(alpha = 0.2f)
+                                        IceBlue.copy(alpha = 0.2f),
+                                        Periwinkle.copy(alpha = 0.2f)
                                     )
                                 )
                             ),
@@ -540,7 +540,7 @@ private fun PerfumeCard(
                             imageVector = Icons.Default.Spa,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = SkyBlue.copy(alpha = 0.4f)
+                            tint = IceBlue.copy(alpha = 0.4f)
                         )
                     }
                 }
@@ -563,7 +563,7 @@ private fun PerfumeCard(
                             Icon(
                                 imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                tint = if (isFavorite) Taupe else TextSecondary,
+                                tint = if (isFavorite) Cornflower else TextSecondary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -578,7 +578,7 @@ private fun PerfumeCard(
                 Text(
                     text = perfume.brand,
                     style = MaterialTheme.typography.labelMedium,
-                    color = SkyBlue,
+                    color = IceBlue,
                     fontWeight = FontWeight.SemiBold
                 )
 
@@ -655,7 +655,7 @@ private fun PerfumeDetailDialog(
                             },
                             modifier = Modifier.weight(1f),
                             gradient = Brush.horizontalGradient(
-                                colors = listOf(Taupe, Taupe.copy(alpha = 0.8f))
+                                colors = listOf(Cornflower, Cornflower.copy(alpha = 0.8f))
                             )
                         ) {
                             Icon(
@@ -700,7 +700,7 @@ private fun PerfumeDetailDialog(
                             Text(
                                 perfume.brand,
                                 style = MaterialTheme.typography.labelLarge,
-                                color = SkyBlue,
+                                color = IceBlue,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -721,7 +721,7 @@ private fun PerfumeDetailDialog(
                                 Icon(
                                     imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                     contentDescription = "Toggle Favorite",
-                                    tint = if (isFavorite) Taupe else TextSecondary
+                                    tint = if (isFavorite) Cornflower else TextSecondary
                                 )
                             }
 
@@ -732,7 +732,7 @@ private fun PerfumeDetailDialog(
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Delete",
-                                    tint = Taupe
+                                    tint = Cornflower
                                 )
                             }
 
@@ -763,9 +763,9 @@ private fun PerfumeDetailDialog(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, SkyBlue)
-                        NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, LightPeriwinkle)
-                        NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Taupe)
+                        NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, IceBlue)
+                        NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, Periwinkle)
+                        NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Cornflower)
                     }
                 }
             }
@@ -870,7 +870,7 @@ private fun RecommendationDialog(
                             unfocusedContainerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
-                            cursorColor = SkyBlue
+                            cursorColor = IceBlue
                         ),
                         minLines = 2
                     )
@@ -954,9 +954,9 @@ private fun RecommendationResultDialog(
 
                 GlassBadge(
                     text = perfume.brand,
-                    backgroundColor = SkyBlue.copy(alpha = 0.15f),
-                    borderColor = SkyBlue.copy(alpha = 0.3f),
-                    textColor = SkyBlue
+                    backgroundColor = IceBlue.copy(alpha = 0.15f),
+                    borderColor = IceBlue.copy(alpha = 0.3f),
+                    textColor = IceBlue
                 )
 
                 Text(
@@ -1012,7 +1012,7 @@ private fun ErrorDialog(
                     imageVector = Icons.Default.Error,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = Taupe
+                    tint = Cornflower
                 )
 
                 Text(

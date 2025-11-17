@@ -13,15 +13,16 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.atelierversace.ui.theme.*
 
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     cornerRadius: Dp = 20.dp,
-    backgroundColor: Color = Color.White.copy(alpha = 0.15f),
-    borderColor: Color = Color.White.copy(alpha = 0.3f),
-    borderWidth: Dp = 1.dp,
+    backgroundColor: Color = Color.White.copy(alpha = 0.4f),
+    borderColor: Color = Periwinkle.copy(alpha = 0.4f),
+    borderWidth: Dp = 1.5.dp,
     content: @Composable () -> Unit
 ) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -72,8 +73,8 @@ fun GlassButton(
     modifier: Modifier = Modifier,
     gradient: Brush = Brush.horizontalGradient(
         colors = listOf(
-            Color(0xFF7D97FE),
-            Color(0xFFA3B3F9)
+            ElectricSapphire,
+            Cornflower
         )
     ),
     content: @Composable RowScope.() -> Unit
@@ -82,7 +83,8 @@ fun GlassButton(
         onClick = onClick,
         modifier = modifier,
         backgroundColor = Color.Transparent,
-        borderColor = Color.White.copy(alpha = 0.3f)
+        borderColor = ElectricSapphire.copy(alpha = 0.3f),
+        borderWidth = 1.5.dp
     ) {
         Box(
             modifier = Modifier
@@ -105,13 +107,13 @@ fun GlassButton(
 fun OutlinedGlassButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    borderColor: Color = Color(0xFF8E8E93).copy(alpha = 0.3f),
+    borderColor: Color = Cornflower.copy(alpha = 0.5f),
     content: @Composable RowScope.() -> Unit
 ) {
     GlassCard(
         onClick = onClick,
         modifier = modifier,
-        backgroundColor = Color.White.copy(alpha = 0.1f),
+        backgroundColor = Color.White.copy(alpha = 0.3f),
         borderColor = borderColor,
         borderWidth = 1.5.dp
     ) {
@@ -135,8 +137,8 @@ fun OutlinedGlassButton(
 fun GlassSurface(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = Color.White.copy(alpha = 0.25f),
-    borderColor: Color = Color.White.copy(alpha = 0.4f),
+    backgroundColor: Color = Color.White.copy(alpha = 0.5f),
+    borderColor: Color = Periwinkle.copy(alpha = 0.5f),
     cornerRadius: Dp = 14.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -145,7 +147,7 @@ fun GlassSurface(
         modifier = modifier,
         shape = RoundedCornerShape(cornerRadius),
         color = backgroundColor,
-        border = BorderStroke(1.dp, borderColor)
+        border = BorderStroke(1.5.dp, borderColor)
     ) {
         Box(
             contentAlignment = androidx.compose.ui.Alignment.Center,
@@ -168,7 +170,7 @@ fun GlassDivider(
                 Brush.horizontalGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color.White.copy(alpha = 0.3f),
+                        Periwinkle.copy(alpha = 0.5f),
                         Color.Transparent
                     )
                 )
@@ -186,20 +188,20 @@ fun GlassChip(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         color = if (selected) {
-            Color.White.copy(alpha = 0.4f)
+            BabyBlueIce.copy(alpha = 0.6f)
         } else {
-            Color.White.copy(alpha = 0.3f)
+            Color.White.copy(alpha = 0.6f)
         },
         border = BorderStroke(
-            width = if (selected) 1.dp else 0.5.dp,
-            color = Color.White.copy(alpha = if (selected) 0.6f else 0.3f)
+            width = if (selected) 1.5.dp else 1.dp,
+            color = if (selected) Cornflower.copy(alpha = 0.7f) else Periwinkle.copy(alpha = 0.5f)
         )
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF2D2D2D)
+            color = if (selected) ElectricSapphire else TextPrimary
         )
     }
 }
@@ -208,9 +210,9 @@ fun GlassChip(
 fun GlassBadge(
     text: String,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = Color(0xFF7D97FE).copy(alpha = 0.15f),
-    borderColor: Color = Color(0xFF7D97FE).copy(alpha = 0.3f),
-    textColor: Color = Color(0xFF7D97FE)
+    backgroundColor: Color = ElectricSapphire.copy(alpha = 0.15f),
+    borderColor: Color = ElectricSapphire.copy(alpha = 0.4f),
+    textColor: Color = ElectricSapphire
 ) {
     Surface(
         shape = RoundedCornerShape(8.dp),
@@ -233,21 +235,21 @@ fun GlassIconButton(
     modifier: Modifier = Modifier,
     size: Dp = 48.dp,
     isActive: Boolean = false,
-    activeColor: Color = Color(0xFFA3B3F9),
+    activeColor: Color = ElectricSapphire,
     content: @Composable BoxScope.() -> Unit
 ) {
     GlassSurface(
         onClick = onClick,
         modifier = modifier.size(size),
         backgroundColor = if (isActive) {
-            activeColor.copy(alpha = 0.25f)
+            activeColor.copy(alpha = 0.2f)
         } else {
-            Color.White.copy(alpha = 0.25f)
+            Color.White.copy(alpha = 0.5f)
         },
         borderColor = if (isActive) {
-            activeColor.copy(alpha = 0.5f)
+            activeColor.copy(alpha = 0.6f)
         } else {
-            Color.White.copy(alpha = 0.4f)
+            Periwinkle.copy(alpha = 0.5f)
         }
     ) {
         content()
@@ -257,8 +259,8 @@ fun GlassIconButton(
 @Composable
 fun GlassIconContainer(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = Color(0xFF7D97FE).copy(alpha = 0.15f),
-    borderColor: Color = Color(0xFF7D97FE).copy(alpha = 0.3f),
+    backgroundColor: Color = ElectricSapphire.copy(alpha = 0.15f),
+    borderColor: Color = ElectricSapphire.copy(alpha = 0.4f),
     size: Dp = 40.dp,
     cornerRadius: Dp = 10.dp,
     content: @Composable BoxScope.() -> Unit
@@ -286,7 +288,7 @@ fun GlassDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.4f)),
+            .background(ElectricSapphire.copy(alpha = 0.3f)),
         contentAlignment = androidx.compose.ui.Alignment.Center
     ) {
         content()
@@ -308,7 +310,7 @@ fun GlassHeader(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.3f),
+                            LightCyan.copy(alpha = 0.5f),
                             Color.Transparent
                         )
                     )
