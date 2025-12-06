@@ -28,3 +28,17 @@
     public static *** v(...);
     public static *** i(...);
 }
+
+-dontwarn java.lang.management.**
+
+-dontwarn okhttp3.internal.**
+-keep class okhttp3.internal.** { *; }
+
+-dontwarn io.ktor.util.debug.**
+-keep class io.ktor.util.debug.** { *; }
+
+-keep class okhttp3.internal.sse.** { *; }
+-dontwarn okhttp3.internal.sse.**
+
+-dontwarn javax.management.**
+-dontwarn java.beans.**
