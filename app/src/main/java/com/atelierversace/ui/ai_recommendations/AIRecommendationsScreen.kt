@@ -80,6 +80,15 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
                                 color = TextPrimary
                             )
 
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            GlassBadge(
+                                text = "powered by SENOPATI",
+                                backgroundColor = VibrantPurple.copy(alpha = 0.15f),
+                                borderColor = VibrantPurple.copy(alpha = 0.3f),
+                                textColor = VibrantPurple
+                            )
+
                             IconButton(
                                 onClick = { viewModel.refreshRecommendations() }
                             ) {

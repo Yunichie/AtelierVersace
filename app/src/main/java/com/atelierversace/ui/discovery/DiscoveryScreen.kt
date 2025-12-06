@@ -89,6 +89,15 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                             color = TextPrimary
                         )
 
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        GlassBadge(
+                            text = "powered by SENOPATI",
+                            backgroundColor = ElectricSapphire.copy(alpha = 0.15f),
+                            borderColor = ElectricSapphire.copy(alpha = 0.3f),
+                            textColor = ElectricSapphire
+                        )
+
                         Spacer(modifier = Modifier.height(32.dp))
 
                         GlassCard(

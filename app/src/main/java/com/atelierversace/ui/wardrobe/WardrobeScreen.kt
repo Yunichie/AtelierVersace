@@ -97,7 +97,7 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                                 Icon(
                                     imageVector = Icons.Default.AutoAwesome,
                                     contentDescription = "Get Recommendation",
-                                    tint = IceBlue,
+                                    tint = Cornflower,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -829,13 +829,27 @@ private fun RecommendationDialog(
                 modifier = Modifier.padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    "Get AI Recommendation",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = TextPrimary
-                )
+                Column(
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        "Get AI Recommendation",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = TextPrimary
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // SENOPATI Badge
+                    GlassBadge(
+                        text = "powered by SENOPATI",
+                        backgroundColor = Cornflower.copy(alpha = 0.15f),
+                        borderColor = Cornflower.copy(alpha = 0.3f),
+                        textColor = Cornflower
+                    )
+                }
 
                 Text(
                     "Describe the occasion or your mood",
