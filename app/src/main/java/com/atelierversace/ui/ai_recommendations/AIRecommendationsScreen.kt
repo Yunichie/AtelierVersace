@@ -38,15 +38,7 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
     var showOccasionInput by remember { mutableStateOf(false) }
     var selectedCombination by remember { mutableStateOf<LayeringCombination?>(null) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
-                )
-            )
-    ) {
+    CenteredGradientBackground {
         Column(modifier = Modifier.fillMaxSize()) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -77,7 +69,13 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
                                 text = "AI Stylist",
                                 style = MaterialTheme.typography.displaySmall.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 40.sp
+                                    fontSize = 40.sp,
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(
+                                            VibrantPurple,
+                                            SkyBlue  // Your original color!
+                                        )
+                                    )
                                 ),
                                 color = TextPrimary
                             )
@@ -88,7 +86,7 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
                                     contentDescription = "Refresh",
-                                    tint = IceBlue,
+                                    tint = ElectricSapphire,
                                     modifier = Modifier.size(28.dp)
                                 )
                             }
@@ -210,7 +208,7 @@ fun AIRecommendationsScreen(viewModel: AIRecommendationsViewModel) {
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = IceBlue
+                                cursorColor = Cornflower
                             ),
                             minLines = 2
                         )
@@ -314,14 +312,14 @@ private fun TabChip(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         color = if (selected) {
-            IceBlue.copy(alpha = 0.25f)
+            Cornflower.copy(alpha = 0.25f)
         } else {
             Color.White.copy(alpha = 0.25f)
         },
         border = androidx.compose.foundation.BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
             color = if (selected) {
-                IceBlue.copy(alpha = 0.5f)
+                Cornflower.copy(alpha = 0.5f)
             } else {
                 Color.White.copy(alpha = 0.4f)
             }
@@ -333,7 +331,7 @@ private fun TabChip(
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
             ),
-            color = if (selected) IceBlue else TextSecondary
+            color = if (selected) ElectricSapphire else TextSecondary
         )
     }
 }
@@ -354,7 +352,7 @@ private fun TodayRecommendationContent(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = IceBlue)
+                    CircularProgressIndicator(color = Cornflower)
                 }
             }
         } else if (recommendation != null) {
@@ -382,8 +380,8 @@ private fun TodayRecommendationContent(
                                     .background(
                                         Brush.radialGradient(
                                             colors = listOf(
-                                                IceBlue.copy(alpha = 0.3f),
-                                                IceBlue.copy(alpha = 0.1f)
+                                                SkyBlue.copy(alpha = 0.3f),
+                                                SkyBlue.copy(alpha = 0.1f)
                                             )
                                         )
                                     ),
@@ -392,7 +390,7 @@ private fun TodayRecommendationContent(
                                 Icon(
                                     imageVector = Icons.Default.WbSunny,
                                     contentDescription = null,
-                                    tint = IceBlue,
+                                    tint = Cornflower,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -410,9 +408,9 @@ private fun TodayRecommendationContent(
 
                         GlassBadge(
                             text = perfume.brand,
-                            backgroundColor = IceBlue.copy(alpha = 0.15f),
-                            borderColor = IceBlue.copy(alpha = 0.3f),
-                            textColor = IceBlue
+                            backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                            borderColor = Cornflower.copy(alpha = 0.3f),
+                            textColor = Cornflower
                         )
 
                         Text(
@@ -500,7 +498,7 @@ private fun LayeringContent(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = IceBlue)
+                    CircularProgressIndicator(color = Cornflower)
                 }
             }
         } else if (combinations.isNotEmpty()) {
@@ -578,21 +576,21 @@ private fun LayeringCombinationCard(
                         Icon(
                             imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                             contentDescription = if (isSaved) "Remove from saved" else "Save layering",
-                            tint = if (isSaved) IceBlue else TextSecondary,
+                            tint = if (isSaved) ElectricSapphire else TextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
 
                     Surface(
                         shape = CircleShape,
-                        color = IceBlue.copy(alpha = 0.2f),
+                        color = SkyBlue.copy(alpha = 0.2f),
                         modifier = Modifier.size(40.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
                                 "${combination.harmonyScore}",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = IceBlue,
+                                color = Cornflower,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -629,9 +627,9 @@ private fun LayeringCombinationCard(
 
             GlassBadge(
                 text = combination.occasion,
-                backgroundColor = Periwinkle.copy(alpha = 0.15f),
-                borderColor = Periwinkle.copy(alpha = 0.3f),
-                textColor = Periwinkle
+                backgroundColor = SkyBlue.copy(alpha = 0.15f),
+                borderColor = SkyBlue.copy(alpha = 0.3f),
+                textColor = Cornflower
             )
         }
     }
@@ -669,7 +667,7 @@ private fun OccasionsContent(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = IceBlue)
+                    CircularProgressIndicator(color = Cornflower)
                 }
             }
         } else if (recommendations.isNotEmpty()) {
@@ -710,9 +708,9 @@ private fun OccasionRecommendationCard(
         Column(modifier = Modifier.padding(20.dp)) {
             GlassBadge(
                 text = occasion,
-                backgroundColor = Cornflower.copy(alpha = 0.15f),
-                borderColor = Cornflower.copy(alpha = 0.3f),
-                textColor = Cornflower
+                backgroundColor = Taupe.copy(alpha = 0.15f),
+                borderColor = Taupe.copy(alpha = 0.3f),
+                textColor = Taupe
             )
 
             Spacer(modifier = Modifier.height(12.dp))

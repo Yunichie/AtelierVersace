@@ -52,15 +52,7 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
             }
         )
     } else {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
-                    )
-                )
-        ) {
+        CenteredGradientBackground {
             AnimatedContent(
                 targetState = isSearchExpanded,
                 transitionSpec = {
@@ -84,7 +76,14 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                             text = "the perfect\nfragrance for you",
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Normal,
-                                fontSize = 32.sp
+                                fontSize = 32.sp,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        VibrantPurple,
+                                        ElectricSapphire,
+                                        Cornflower
+                                    )
+                                )
                             ),
                             textAlign = TextAlign.Center,
                             color = TextPrimary
@@ -106,7 +105,7 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                                 Icon(
                                     imageVector = Icons.Default.Search,
                                     contentDescription = null,
-                                    tint = IceBlue,
+                                    tint = Cornflower,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -136,7 +135,7 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                                         Icon(
                                             imageVector = Icons.Default.Search,
                                             contentDescription = null,
-                                            tint = IceBlue,
+                                            tint = Cornflower,
                                             modifier = Modifier.size(20.dp)
                                         )
 
@@ -158,7 +157,7 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                                                 unfocusedContainerColor = Color.Transparent,
                                                 focusedIndicatorColor = Color.Transparent,
                                                 unfocusedIndicatorColor = Color.Transparent,
-                                                cursorColor = IceBlue
+                                                cursorColor = Cornflower
                                             ),
                                             singleLine = false,
                                             maxLines = 3
@@ -221,7 +220,7 @@ fun DiscoveryScreen(viewModel: DiscoveryViewModel) {
                                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                                             ) {
                                                 CircularProgressIndicator(
-                                                    color = IceBlue,
+                                                    color = Cornflower,
                                                     modifier = Modifier.size(48.dp),
                                                     strokeWidth = 3.dp
                                                 )
@@ -316,9 +315,9 @@ private fun EnhancedResultCard(
                     Column(modifier = Modifier.weight(1f)) {
                         GlassBadge(
                             text = profile.brand,
-                            backgroundColor = IceBlue.copy(alpha = 0.15f),
-                            borderColor = IceBlue.copy(alpha = 0.3f),
-                            textColor = IceBlue
+                            backgroundColor = Cornflower.copy(alpha = 0.15f),
+                            borderColor = Cornflower.copy(alpha = 0.3f),
+                            textColor = Cornflower
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -359,14 +358,14 @@ private fun EnhancedResultCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 GlassIconContainer(
-                    backgroundColor = IceBlue.copy(alpha = 0.15f),
-                    borderColor = IceBlue.copy(alpha = 0.3f),
+                    backgroundColor = Cornflower.copy(alpha = 0.15f),
+                    borderColor = Cornflower.copy(alpha = 0.3f),
                     size = 36.dp
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        tint = IceBlue,
+                        tint = Cornflower,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -374,7 +373,7 @@ private fun EnhancedResultCard(
                 Text(
                     text = profile.analogy,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = IceBlue,
+                    color = Cornflower,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -460,9 +459,9 @@ private fun DiscoveryDetailScreen(
                 // Brand Badge
                 GlassBadge(
                     text = profile.brand,
-                    backgroundColor = IceBlue.copy(alpha = 0.15f),
-                    borderColor = IceBlue.copy(alpha = 0.3f),
-                    textColor = IceBlue
+                    backgroundColor = Cornflower.copy(alpha = 0.15f),
+                    borderColor = Cornflower.copy(alpha = 0.3f),
+                    textColor = Cornflower
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -488,13 +487,13 @@ private fun DiscoveryDetailScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         GlassIconContainer(
-                            backgroundColor = IceBlue.copy(alpha = 0.15f),
-                            borderColor = IceBlue.copy(alpha = 0.3f)
+                            backgroundColor = Cornflower.copy(alpha = 0.15f),
+                            borderColor = Cornflower.copy(alpha = 0.3f)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Info,
                                 contentDescription = null,
-                                tint = IceBlue,
+                                tint = Cornflower,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -568,7 +567,7 @@ private fun DiscoveryDetailScreen(
                     title = "Top Notes",
                     description = "First impression, lasts 15-30 minutes",
                     notes = profile.topNotes,
-                    color = IceBlue
+                    color = Cornflower
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -586,7 +585,7 @@ private fun DiscoveryDetailScreen(
                     title = "Base Notes",
                     description = "Long-lasting foundation, lasts 5-10+ hours",
                     notes = profile.baseNotes,
-                    color = Cornflower
+                    color = Taupe
                 )
 
                 Spacer(modifier = Modifier.height(80.dp))

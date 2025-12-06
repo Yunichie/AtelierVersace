@@ -79,15 +79,7 @@ fun AuthScreen(
         displayNameError = null
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
-                )
-            )
-    ) {
+    CenteredGradientBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -103,8 +95,9 @@ fun AuthScreen(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                IceBlue.copy(alpha = 0.3f),
-                                IceBlue.copy(alpha = 0.1f)
+                                VibrantPurple.copy(alpha = 0.4f),
+                                ElectricSapphire.copy(alpha = 0.3f),
+                                SoftPink.copy(alpha = 0.2f)
                             )
                         )
                     ),
@@ -114,7 +107,7 @@ fun AuthScreen(
                     imageVector = Icons.Default.Spa,
                     contentDescription = null,
                     modifier = Modifier.size(50.dp),
-                    tint = IceBlue
+                    tint = VibrantPurple
                 )
             }
 
@@ -183,7 +176,7 @@ fun AuthScreen(
                                         Icon(
                                             imageVector = Icons.Default.Person,
                                             contentDescription = null,
-                                            tint = IceBlue
+                                            tint = Cornflower
                                         )
                                     },
                                     colors = TextFieldDefaults.colors(
@@ -191,7 +184,7 @@ fun AuthScreen(
                                         unfocusedContainerColor = Color.Transparent,
                                         focusedIndicatorColor = Color.Transparent,
                                         unfocusedIndicatorColor = Color.Transparent,
-                                        cursorColor = IceBlue
+                                        cursorColor = Cornflower
                                     ),
                                     singleLine = true,
                                     isError = displayNameError != null
@@ -233,7 +226,7 @@ fun AuthScreen(
                                     Icon(
                                         imageVector = Icons.Default.Email,
                                         contentDescription = null,
-                                        tint = IceBlue
+                                        tint = Cornflower
                                     )
                                 },
                                 colors = TextFieldDefaults.colors(
@@ -241,7 +234,7 @@ fun AuthScreen(
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = IceBlue
+                                    cursorColor = Cornflower
                                 ),
                                 singleLine = true,
                                 isError = emailError != null
@@ -282,7 +275,7 @@ fun AuthScreen(
                                     Icon(
                                         imageVector = Icons.Default.Lock,
                                         contentDescription = null,
-                                        tint = IceBlue
+                                        tint = Cornflower
                                     )
                                 },
                                 trailingIcon = {
@@ -304,7 +297,7 @@ fun AuthScreen(
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = IceBlue
+                                    cursorColor = Cornflower
                                 ),
                                 singleLine = true,
                                 isError = passwordError != null
@@ -328,7 +321,7 @@ fun AuthScreen(
                         ) {
                             Text(
                                 "Forgot password?",
-                                color = IceBlue,
+                                color = Cornflower,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -427,7 +420,7 @@ fun AuthScreen(
                         }) {
                             Text(
                                 text = if (loginMode) "Sign Up" else "Sign In",
-                                color = IceBlue,
+                                color = Cornflower,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -492,7 +485,7 @@ fun AuthScreen(
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = IceBlue
+                                    cursorColor = Cornflower
                                 ),
                                 singleLine = true,
                                 isError = resetEmailError != null
@@ -556,7 +549,7 @@ fun AuthScreen(
         ) {
             GlassCard(
                 modifier = Modifier.padding(horizontal = 32.dp),
-                backgroundColor = IceBlue.copy(alpha = 0.9f),
+                backgroundColor = Cornflower.copy(alpha = 0.9f),
                 borderColor = Color.White.copy(alpha = 0.5f)
             ) {
                 Row(

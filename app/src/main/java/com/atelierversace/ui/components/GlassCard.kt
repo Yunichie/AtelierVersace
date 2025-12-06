@@ -16,6 +16,30 @@ import androidx.compose.ui.unit.dp
 import com.atelierversace.ui.theme.*
 
 @Composable
+fun CenteredGradientBackground(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Lavender,
+                        LightPeriwinkle,
+                        Color(0xFFFFE8F0),
+                        Color(0xFFF5F0F5)
+                    ),
+                    radius = 1500f
+                )
+            )
+    ) {
+        content()
+    }
+}
+
+@Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,

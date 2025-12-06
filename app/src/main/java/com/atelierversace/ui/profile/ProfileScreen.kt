@@ -91,15 +91,7 @@ fun ProfileScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
-                )
-            )
-    ) {
+    CenteredGradientBackground {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -111,7 +103,7 @@ fun ProfileScreen(
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     backgroundColor = Color.White.copy(alpha = 0.25f),
-                    borderColor = Color.White.copy(alpha = 0.5f),
+                    borderColor = VibrantPurple.copy(alpha = 0.5f),
                     cornerRadius = 24.dp
                 ) {
                     Column(
@@ -126,7 +118,13 @@ fun ProfileScreen(
                                     modifier = Modifier
                                         .size(100.dp)
                                         .clip(CircleShape)
-                                        .border(3.dp, Color.White.copy(alpha = 0.5f), CircleShape),
+                                        .border(3.dp, brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                VibrantPurple,
+                                                ElectricSapphire,
+                                                SoftPink
+                                            )
+                                        ), CircleShape),
                                     contentScale = ContentScale.Crop
                                 )
                             } else {
@@ -137,19 +135,26 @@ fun ProfileScreen(
                                         .background(
                                             Brush.radialGradient(
                                                 colors = listOf(
-                                                    IceBlue.copy(alpha = 0.3f),
-                                                    IceBlue.copy(alpha = 0.1f)
+                                                    VibrantPurple.copy(alpha = 0.3f),
+                                                    ElectricSapphire.copy(alpha = 0.2f),
+                                                    SoftPink.copy(alpha = 0.1f)
                                                 )
                                             )
                                         )
-                                        .border(3.dp, Color.White.copy(alpha = 0.5f), CircleShape),
+                                        .border(3.dp, brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                VibrantPurple,
+                                                ElectricSapphire,
+                                                SoftPink
+                                            )
+                                        ), CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = null,
                                         modifier = Modifier.size(50.dp),
-                                        tint = IceBlue
+                                        tint = VibrantPurple
                                     )
                                 }
                             }
@@ -167,7 +172,7 @@ fun ProfileScreen(
                                     }
                                 },
                                 shape = CircleShape,
-                                color = IceBlue,
+                                color = Cornflower,
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -218,19 +223,19 @@ fun ProfileScreen(
                                 icon = Icons.Default.Favorite,
                                 count = wardrobeCount,
                                 label = "Wardrobe",
-                                color = IceBlue
+                                color = Cornflower
                             )
                             StatItem(
                                 icon = Icons.Default.FavoriteBorder,
                                 count = wishlistCount,
                                 label = "Wishlist",
-                                color = Periwinkle
+                                color = SkyBlue
                             )
                             StatItem(
                                 icon = Icons.Default.Star,
                                 count = favoritesCount,
                                 label = "Favorites",
-                                color = Cornflower
+                                color = VibrantPurple
                             )
                         }
                     }
@@ -260,14 +265,14 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             GlassIconContainer(
-                                backgroundColor = IceBlue.copy(alpha = 0.15f),
-                                borderColor = IceBlue.copy(alpha = 0.3f),
+                                backgroundColor = Cornflower.copy(alpha = 0.15f),
+                                borderColor = Cornflower.copy(alpha = 0.3f),
                                 size = 48.dp
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Palette,
                                     contentDescription = null,
-                                    tint = IceBlue,
+                                    tint = Cornflower,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -283,7 +288,7 @@ fun ProfileScreen(
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
-                                    color = IceBlue
+                                    color = Cornflower
                                 )
                             }
                         }
@@ -303,14 +308,14 @@ fun ProfileScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     GlassIconContainer(
-                                        backgroundColor = Periwinkle.copy(alpha = 0.15f),
-                                        borderColor = Periwinkle.copy(alpha = 0.3f),
+                                        backgroundColor = VibrantPurple.copy(alpha = 0.15f),
+                                        borderColor = VibrantPurple.copy(alpha = 0.3f),
                                         size = 40.dp
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Store,
                                             contentDescription = null,
-                                            tint = Periwinkle,
+                                            tint = VibrantPurple,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
@@ -331,7 +336,7 @@ fun ProfileScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     personalization!!.preferredBrands.take(3).forEach { brand ->
-                                        GlassChip(text = brand, selected = true)
+                                        GlassChip(text = brand)
                                     }
                                 }
                             }
@@ -404,14 +409,14 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             GlassIconContainer(
-                                backgroundColor = IceBlue.copy(alpha = 0.15f),
-                                borderColor = IceBlue.copy(alpha = 0.3f),
+                                backgroundColor = VibrantPurple.copy(alpha = 0.15f),
+                                borderColor = VibrantPurple.copy(alpha = 0.3f),
                                 size = 48.dp
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Tune,
                                     contentDescription = null,
-                                    tint = IceBlue,
+                                    tint = VibrantPurple,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -427,7 +432,7 @@ fun ProfileScreen(
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
-                                    color = IceBlue
+                                    color = VibrantPurple
                                 )
                             }
                         }
@@ -485,7 +490,7 @@ fun ProfileScreen(
                     onClick = { showSignOutDialog = true },
                     modifier = Modifier.fillMaxWidth(),
                     backgroundColor = Color.White.copy(alpha = 0.25f),
-                    borderColor = Cornflower.copy(alpha = 0.3f)
+                    borderColor = Taupe.copy(alpha = 0.3f)
                 ) {
                     Row(
                         modifier = Modifier.padding(20.dp),
@@ -495,13 +500,13 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.Default.Logout,
                             contentDescription = null,
-                            tint = Cornflower,
+                            tint = Taupe,
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
                             "Sign Out",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Cornflower,
+                            color = Taupe,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -563,10 +568,10 @@ fun ProfileScreen(
                         Icon(
                             imageVector = Icons.Default.PhotoLibrary,
                             contentDescription = null,
-                            tint = IceBlue
+                            tint = Cornflower
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Choose from Gallery", color = IceBlue)
+                        Text("Choose from Gallery", color = Cornflower)
                     }
 
                     TextButton(

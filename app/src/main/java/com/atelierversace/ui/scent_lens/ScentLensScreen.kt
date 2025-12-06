@@ -108,15 +108,7 @@ fun ScentLensScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
-                )
-            )
-    ) {
+    CenteredGradientBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -130,7 +122,10 @@ fun ScentLensScreen(
                 text = "Scent Lens",
                 style = MaterialTheme.typography.displaySmall.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 40.sp
+                    fontSize = 40.sp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(VibrantPurple, ElectricSapphire)
+                    )
                 ),
                 color = TextPrimary
             )
@@ -271,10 +266,10 @@ fun ScentLensScreen(
                         Icon(
                             imageVector = Icons.Default.PhotoLibrary,
                             contentDescription = null,
-                            tint = IceBlue
+                            tint = Cornflower
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Choose from Gallery", color = IceBlue)
+                        Text("Choose from Gallery", color = Cornflower)
                     }
 
                     TextButton(

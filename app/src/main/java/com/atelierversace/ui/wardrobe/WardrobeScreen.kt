@@ -54,15 +54,7 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(SoftPeriwinkle, Color(0xFFF8F7FF), Color(0xFFF5F5F5))
-                )
-            )
-    ) {
+    CenteredGradientBackground {
         Column(modifier = Modifier.fillMaxSize()) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -74,7 +66,8 @@ fun WardrobeScreen(viewModel: WardrobeViewModel) {
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color.White.copy(alpha = 0.3f),
+                                    MintGreen.copy(alpha = 0.15f),
+                                    SunsetOrange.copy(alpha = 0.1f),
                                     Color.Transparent
                                 )
                             )
@@ -229,14 +222,14 @@ private fun TabChip(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         color = if (selected) {
-            IceBlue.copy(alpha = 0.25f)
+            Cornflower.copy(alpha = 0.25f)
         } else {
             Color.White.copy(alpha = 0.25f)
         },
         border = BorderStroke(
             width = if (selected) 1.5.dp else 1.dp,
             color = if (selected) {
-                IceBlue.copy(alpha = 0.5f)
+                Cornflower.copy(alpha = 0.5f)
             } else {
                 Color.White.copy(alpha = 0.4f)
             }
@@ -248,7 +241,7 @@ private fun TabChip(
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
             ),
-            color = if (selected) IceBlue else TextSecondary
+            color = if (selected) Cornflower else TextSecondary
         )
     }
 }
@@ -306,7 +299,7 @@ private fun SavedLayeringsTab(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = IceBlue)
+            CircularProgressIndicator(color = Cornflower)
         }
     } else if (savedLayerings.isEmpty()) {
         Box(
@@ -440,7 +433,7 @@ private fun SavedLayeringCard(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Remove",
-                        tint = Cornflower
+                        tint = Taupe
                     )
                 }
             }
@@ -485,9 +478,9 @@ private fun SavedLayeringCard(
 
             GlassBadge(
                 text = layering.occasion,
-                backgroundColor = Periwinkle.copy(alpha = 0.15f),
-                borderColor = Periwinkle.copy(alpha = 0.3f),
-                textColor = Periwinkle
+                backgroundColor = Cornflower.copy(alpha = 0.15f),
+                borderColor = Cornflower.copy(alpha = 0.3f),
+                textColor = Cornflower
             )
         }
     }
@@ -563,7 +556,7 @@ private fun PerfumeCard(
                             Icon(
                                 imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                tint = if (isFavorite) Cornflower else TextSecondary,
+                                tint = if (isFavorite) Taupe else TextSecondary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -578,7 +571,7 @@ private fun PerfumeCard(
                 Text(
                     text = perfume.brand,
                     style = MaterialTheme.typography.labelMedium,
-                    color = IceBlue,
+                    color = Cornflower,
                     fontWeight = FontWeight.SemiBold
                 )
 
@@ -700,7 +693,7 @@ private fun PerfumeDetailDialog(
                             Text(
                                 perfume.brand,
                                 style = MaterialTheme.typography.labelLarge,
-                                color = IceBlue,
+                                color = Cornflower,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
@@ -732,7 +725,7 @@ private fun PerfumeDetailDialog(
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Delete",
-                                    tint = Cornflower
+                                    tint = Taupe
                                 )
                             }
 
@@ -763,9 +756,9 @@ private fun PerfumeDetailDialog(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, IceBlue)
-                        NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, Periwinkle)
-                        NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, Cornflower)
+                        NotesRow("Top Notes", perfume.topNotes.split(",").map { it.trim() }, VibrantPurple)
+                        NotesRow("Middle Notes", perfume.middleNotes.split(",").map { it.trim() }, Cornflower)
+                        NotesRow("Base Notes", perfume.baseNotes.split(",").map { it.trim() }, SkyBlue)
                     }
                 }
             }
